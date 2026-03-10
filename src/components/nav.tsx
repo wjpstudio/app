@@ -14,23 +14,23 @@ export function Nav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-bg/80 backdrop-blur-xl backdrop-saturate-[180%]">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-bg/90 backdrop-blur-sm">
       <div className="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between">
         <Link
           href="/"
-          className="font-mono text-sm tracking-wider text-subtle hover:text-foreground transition-colors"
+          className="font-mono text-sm tracking-widest text-foreground hover:text-accent transition-colors uppercase"
         >
-          wjp.studio
+          WJP
         </Link>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {links.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`text-sm transition-colors ${
+              className={`font-mono text-xs tracking-wide uppercase transition-colors ${
                 pathname === href
                   ? "text-foreground"
-                  : "text-muted hover:text-subtle"
+                  : "text-muted hover:text-foreground"
               }`}
             >
               {label}

@@ -1,122 +1,63 @@
-import Link from "next/link";
-import { projects, statusDots, statusColors } from "@/lib/data";
+import { projects } from "@/lib/data";
+import { ProjectCard } from "@/components/ProjectCard";
+import { AgentRow } from "@/components/AgentRow";
+import { PixelDivider } from "@/components/PixelDivider";
 
 export default function Home() {
-  const activeProjects = projects.filter(
-    (p) => p.status === "live" || p.status === "launching"
-  );
-
   return (
     <div className="mx-auto max-w-5xl px-6">
-      {/* Hero */}
+      {/* Hero — type and grid, nothing else */}
       <section className="pt-32 pb-24">
-        <p className="font-mono text-xs tracking-widest text-muted uppercase mb-6">
+        <p className="font-mono text-xs tracking-[0.25em] text-accent uppercase mb-8">
           WJP Studio
         </p>
-        <h1 className="text-4xl sm:text-5xl font-light tracking-tight leading-[1.1] mb-6 text-balance max-w-2xl">
-          One person. Four agents.
-          <br />
-          Building for the AI economy.
+        <h1 className="text-4xl sm:text-5xl font-light tracking-tight leading-[1.1] mb-8 text-foreground max-w-2xl">
+          A creative studio that automates everything.
         </h1>
-        <p className="text-subtle text-lg max-w-xl leading-relaxed">
-          A solo operator running an autonomous AI studio. Shipping products,
-          content, and code around the clock.
+        <p className="font-mono text-sm text-muted max-w-md leading-relaxed">
+          One person. Four agents. Building products, content, and code for the
+          AI economy — around the clock.
         </p>
       </section>
 
-      {/* Active Projects */}
-      <section className="py-16 border-t border-border/50">
-        <div className="flex items-baseline justify-between mb-10">
-          <h2 className="font-mono text-xs tracking-widest text-muted uppercase">
-            Active Projects
-          </h2>
-          <Link
-            href="/projects"
-            className="text-sm text-muted hover:text-subtle transition-colors"
-          >
-            View all
-          </Link>
-        </div>
-        <div className="space-y-6">
-          {activeProjects.map((project) => (
-            <div
-              key={project.slug}
-              className="group flex items-start justify-between py-4 border-b border-border/30 last:border-0"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-normal">{project.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full ${statusDots[project.status]}`}
-                    />
-                    <span
-                      className={`font-mono text-xs ${statusColors[project.status]}`}
-                    >
-                      {project.status}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted max-w-md">
-                  {project.description}
-                </p>
-              </div>
-              {project.url && (
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-mono text-muted hover:text-subtle transition-colors shrink-0 mt-1"
-                >
-                  {project.url.replace("https://", "")}
-                </a>
-              )}
-            </div>
+      <PixelDivider accent />
+
+      {/* Active Projects — 6 cards in grid */}
+      <section className="py-16">
+        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-8">
+          Projects
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-border">
+          {projects.map((project) => (
+            <ProjectCard key={project.slug} project={project} />
           ))}
         </div>
       </section>
 
-      {/* Studio */}
-      <section className="py-16 border-t border-border/50">
-        <div className="flex items-baseline justify-between mb-10">
-          <h2 className="font-mono text-xs tracking-widest text-muted uppercase">
-            The Studio
-          </h2>
-          <Link
-            href="/studio"
-            className="text-sm text-muted hover:text-subtle transition-colors"
-          >
-            Meet the team
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {["Claud", "Kikai", "Yama", "Kodo"].map((name) => (
-            <div key={name} className="space-y-2">
-              <div className="w-full aspect-square bg-surface rounded-lg border border-border/50 flex items-center justify-center">
-                <span className="font-mono text-2xl text-muted/30">
-                  {name[0]}
-                </span>
-              </div>
-              <p className="text-sm font-medium">{name}</p>
-              <p className="text-xs text-muted font-mono">
-                {name === "Claud"
-                  ? "builder"
-                  : name === "Kikai"
-                    ? "operator"
-                    : name === "Yama"
-                      ? "grower"
-                      : "builder"}
-              </p>
-            </div>
-          ))}
+      <PixelDivider />
+
+      {/* Studio Team Row */}
+      <section className="py-16">
+        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-8">
+          The Studio
+        </h2>
+        <div className="border border-border bg-surface p-6">
+          <AgentRow name="Kikai" role="Operator" />
+          <AgentRow name="Yama" role="Grower" />
+          <AgentRow name="Kodo" role="Builder" />
+          <AgentRow name="Claud" role="Builder" />
         </div>
       </section>
+
+      <PixelDivider />
 
       {/* Footer */}
-      <footer className="py-16 border-t border-border/50">
+      <footer className="py-16">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted font-mono">wjp.studio</p>
-          <p className="text-xs text-muted">2026</p>
+          <p className="font-mono text-xs text-muted tracking-widest">
+            wjp.studio
+          </p>
+          <p className="font-mono text-xs text-muted">2026</p>
         </div>
       </footer>
     </div>

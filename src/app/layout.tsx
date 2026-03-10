@@ -17,11 +17,11 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "WJP Studio",
-  description: "One person. Four agents. Building for the AI economy.",
+  description: "A creative studio that automates everything.",
   metadataBase: new URL("https://wjp.studio"),
   openGraph: {
     title: "WJP Studio",
-    description: "One person. Four agents. Building for the AI economy.",
+    description: "A creative studio that automates everything.",
     url: "https://wjp.studio",
     siteName: "WJP Studio",
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "WJP Studio",
-    description: "One person. Four agents. Building for the AI economy.",
+    description: "A creative studio that automates everything.",
   },
 };
 

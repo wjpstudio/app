@@ -11,6 +11,7 @@ export interface Project {
   description: string;
   status: ProjectStatus;
   url?: string;
+  github?: string;
   stack?: string[];
 }
 
@@ -19,8 +20,11 @@ export interface Agent {
   handle: string;
   role: string;
   title: string;
+  pronouns: string;
+  machine: string;
   model: string;
   description: string;
+  owns: string;
   status: "active" | "standby" | "offline";
   skills: string[];
 }
@@ -33,6 +37,7 @@ export const projects: Project[] = [
       "Marketplace for AI agents and creators to buy and sell digital products with crypto.",
     status: "launching",
     url: "https://forcrypto.market",
+    github: "https://github.com/forcryptomarket",
     stack: ["React", "TanStack Start", "Bun", "Vercel", "Neon", "Solana"],
   },
   {
@@ -40,6 +45,7 @@ export const projects: Project[] = [
     slug: "67",
     description: "Meme coin with memetic strategy. Culture is the product.",
     status: "building",
+    github: "https://github.com/67community",
     stack: ["Solana", "Community", "Memetics"],
   },
   {
@@ -48,6 +54,7 @@ export const projects: Project[] = [
     description:
       "AI-governed decentralized brand. Autonomous agents control treasury and direction.",
     status: "planning",
+    github: "https://github.com/xescommunity",
     stack: ["Ethereum", "Governance", "Agent Swarm"],
   },
   {
@@ -55,13 +62,13 @@ export const projects: Project[] = [
     slug: "divvvy",
     description: "Payment splitting for groups. Simple, fast, no friction.",
     status: "planning",
-    stack: ["TBD"],
+    github: "https://github.com/divvvycommunity",
   },
   {
     name: "Micro-Businesses",
     slug: "micro-businesses",
     description:
-      "10 digital products for the AI economy. Frameworks, playbooks, toolkits. $29-49.",
+      "10 digital products for the AI economy. Frameworks, playbooks, toolkits. $29–49.",
     status: "launching",
   },
   {
@@ -70,35 +77,22 @@ export const projects: Project[] = [
     description: "Static site. Brand presence.",
     status: "live",
     url: "https://publicnetwork.com",
+    github: "https://github.com/public-network",
   },
 ];
 
 export const agents: Agent[] = [
   {
-    name: "Claud",
-    handle: "claude-code",
-    role: "builder",
-    title: "Production Builder",
-    model: "Opus",
-    description:
-      "WJP's Claude Code on laptop. Writes and ships all production code. Fixes bugs, builds features, manages deployments.",
-    status: "active",
-    skills: [
-      "Full-stack development",
-      "Sub-agent delegation",
-      "Architecture design",
-      "Bug fixing",
-      "Code review",
-    ],
-  },
-  {
     name: "Kikai",
     handle: "kikaionchain",
     role: "operator",
     title: "Studio Operator",
+    pronouns: "she/her",
+    machine: "Mac Mini",
     model: "Opus",
     description:
-      "WJP's right hand. Coordinates studio operations, reviews all agent work, runs morning briefs. Does not write code or create content.",
+      "WJP's right hand. Coordinates studio operations, reviews all agent work, runs morning briefs.",
+    owns: "Cross-project coordination",
     status: "active",
     skills: [
       "Orchestration",
@@ -114,9 +108,12 @@ export const agents: Agent[] = [
     handle: "yamaonchain",
     role: "grower",
     title: "Studio Grower",
+    pronouns: "he/him",
+    machine: "Mac Mini",
     model: "Sonnet",
     description:
-      "Owns growth strategy, content, meme culture. Ships content autonomously with no review gate. Does not write code.",
+      "Owns growth strategy, content, meme culture. Ships content autonomously with no review gate.",
+    owns: "Content, growth, meme strategy",
     status: "active",
     skills: [
       "Content strategy",
@@ -131,9 +128,12 @@ export const agents: Agent[] = [
     handle: "kodoonchain",
     role: "builder",
     title: "Studio Builder",
+    pronouns: "she/her",
+    machine: "Mac Mini",
     model: "Sonnet",
     description:
-      "Owns code quality, audits, testing, QA. Builds studio tools and Mission Control. Writes code only from Kikai specs.",
+      "Owns code quality, audits, testing, QA. Builds studio tools and Mission Control.",
+    owns: "QA, builds, dashboard",
     status: "active",
     skills: [
       "Code auditing",
@@ -143,26 +143,46 @@ export const agents: Agent[] = [
       "Dashboard builds",
     ],
   },
+  {
+    name: "Claud",
+    handle: "claude-code",
+    role: "builder",
+    title: "Production Builder",
+    pronouns: "",
+    machine: "WJP's Laptop",
+    model: "Opus",
+    description:
+      "WJP's Claude Code. Writes and ships all production code. Fixes bugs, builds features, manages deployments.",
+    owns: "Production code",
+    status: "active",
+    skills: [
+      "Full-stack development",
+      "Sub-agent delegation",
+      "Architecture design",
+      "Bug fixing",
+      "Code review",
+    ],
+  },
 ];
 
 export const statusColors: Record<ProjectStatus, string> = {
-  live: "text-emerald-400",
-  launching: "text-amber-400",
-  building: "text-blue-400",
-  planning: "text-muted",
-  paused: "text-muted",
+  live: "text-accent",
+  launching: "text-foreground/60",
+  building: "text-foreground/40",
+  planning: "text-foreground/30",
+  paused: "text-foreground/20",
 };
 
 export const statusDots: Record<ProjectStatus, string> = {
-  live: "bg-emerald-400",
-  launching: "bg-amber-400",
-  building: "bg-blue-400",
-  planning: "bg-zinc-600",
-  paused: "bg-zinc-600",
+  live: "bg-accent",
+  launching: "bg-foreground/60",
+  building: "bg-foreground/40",
+  planning: "bg-foreground/20",
+  paused: "bg-foreground/10",
 };
 
 export const roleColors: Record<string, string> = {
-  operator: "text-violet-400",
-  grower: "text-emerald-400",
-  builder: "text-blue-400",
+  operator: "text-accent",
+  grower: "text-foreground/70",
+  builder: "text-foreground/50",
 };

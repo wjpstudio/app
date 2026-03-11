@@ -284,7 +284,7 @@ export default function DashboardPage() {
             <img
               src="/pfp/wjp.png"
               alt="WJP"
-              className="w-7 h-7 pixel-render border border-border"
+              className="w-10 h-10 pixel-render border border-border"
               style={{ borderRadius: 0, imageRendering: "pixelated" }}
             />
             <h1 className="font-mono text-base tracking-[0.3em] text-foreground uppercase glitch-text">
@@ -326,7 +326,7 @@ export default function DashboardPage() {
                     <img
                       src={pfp}
                       alt={name}
-                      className="w-8 h-8 pixel-render border border-border"
+                      className="w-12 h-12 pixel-render border border-border"
                       style={{ borderRadius: 0, imageRendering: "pixelated" }}
                     />
                     <div className="flex-1 min-w-0">

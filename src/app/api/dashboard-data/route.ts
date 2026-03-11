@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const REPO = "wjpstudio/dashboard";
+const REPO = "kikaionchain/dashboard";
 const BRANCH = "main";
 const GH_TOKEN = process.env.GITHUB_TOKEN;
 

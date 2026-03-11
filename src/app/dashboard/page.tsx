@@ -682,7 +682,7 @@ export default function DashboardPage() {
                   className="flex items-baseline justify-between py-1"
                 >
                   <span className="font-mono text-[12px] text-foreground/50 truncate max-w-[300px]">
-                    {output.file || "—"}
+                    {output.file || output.filename || "—"}
                   </span>
                   <span className="font-mono text-[12px] text-muted/30">
                     {output.lines ? `${output.lines}L` : output.size ? `${Math.round(output.size / 1024)}K` : "—"}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PixelDivider } from "@/components/PixelDivider";
 
-const MC_BASE = "https://kikaionchain.github.io/mission-control";
+const MC_BASE = "https://kikaionchain.github.io/dashboard";
 const BASE_RPC = "https://mainnet.base.org";
 const SOL_RPC = "https://solana-rpc.publicnode.com";
 const TREASURY_BASE = "0x51e0c3cb17e8AAb6391F40468A34E8E94aa1166E";

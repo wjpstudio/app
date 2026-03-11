@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { PixelDivider } from "@/components/PixelDivider";
 
 const MC_BASE = "https://kikaionchain.github.io/mission-control";
@@ -91,7 +90,6 @@ function UsageBar({ label, pct }: { label: string; pct: number | null }) {
 
 // ── Dashboard ────────────────────────────────────────
 export default function DashboardPage() {
-  const router = useRouter();
   const [agents, setAgents] = useState<Record<string, AgentData>>({});
   const [usage, setUsage] = useState<Record<string, UsageAgent>>({});
   const [usageResets, setUsageResets] = useState("");
@@ -261,24 +259,21 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    // Check auth
-    const token = document.cookie
-      .split("; ")
-      .find((c) => c.startsWith("dashboard_auth="));
-    if (!token) {
-      router.push("/");
-      return;
-    }
-
+    // Middleware handles auth server-side — no client-side cookie check needed
+    // (dashboard_auth is httpOnly, JS can't read it)
     fetchData();
     const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [fetchData, router]);
+  }, [fetchData]);
 
   function handleLogout() {
+    // Clear readable cookie client-side, then hit logout API to clear httpOnly cookie
     document.cookie =
-      "dashboard_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/");
+      "dashboard_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // POST to logout API clears httpOnly cookie and redirects to /
+    fetch("/api/auth/logout", { method: "POST", redirect: "follow" })
+      .then(() => window.location.href = "/")
+      .catch(() => window.location.href = "/");
   }
 
   return (

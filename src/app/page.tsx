@@ -9,9 +9,11 @@ export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Use dashboard_user cookie (not httpOnly) for client-side redirect
+    // Middleware validates the httpOnly dashboard_auth cookie server-side
     const token = document.cookie
       .split("; ")
-      .find((c) => c.startsWith("dashboard_auth="));
+      .find((c) => c.startsWith("dashboard_user="));
     if (token) {
       router.push("/dashboard");
       return;

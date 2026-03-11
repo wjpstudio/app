@@ -309,7 +309,7 @@ export default function DashboardPage() {
                       src={pfp}
                       alt={name}
                       className="w-12 h-12 pixel-render border border-border"
-                      style={{ borderRadius: 0, imageRendering: "pixelated" }}
+                      style={{ borderRadius: 0, imageRendering: "pixelated", backgroundColor: "#ffffff" }}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

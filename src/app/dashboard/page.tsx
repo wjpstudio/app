@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { PixelDivider } from "@/components/PixelDivider";
 
 const MC_BASE = "https://kikaionchain.github.io/mission-control";
@@ -9,7 +10,15 @@ const SOL_RPC = "https://solana-rpc.publicnode.com";
 const TREASURY_BASE = "0x51e0c3cb17e8AAb6391F40468A34E8E94aa1166E";
 const TREASURY_SOL = "DPe3WqzeJisHPj4LyjRNcVgtUYUzJmmC4LkvUifadaLm";
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const COINGECKO = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,solana&vs_currencies=usd";
+const COINGECKO =
+  "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,solana&vs_currencies=usd";
+
+const AGENTS = [
+  { key: "kikai", name: "Kikai", role: "Operator", pfp: "/pfp/kikai.png" },
+  { key: "yama", name: "Yama", role: "Grower", pfp: "/pfp/yama.png" },
+  { key: "kodo", name: "Kodo", role: "Builder", pfp: "/pfp/kodo.png" },
+  { key: "claud", name: "Claud", role: "Builder", pfp: "/pfp/claud.png" },
+];
 
 interface AgentData {
   status: string;
@@ -25,22 +34,12 @@ interface UsageAgent {
   allModels: number | null;
   sonnet: number | null;
   opus: number | null;
-  updatedAt: string | null;
-  note?: string;
-}
-
-interface KodoData {
-  activeTask: string;
-  recentOutputs: { file: string; lines: number; summary: string }[];
-  cronJobs: { name: string; schedule: string; status: string }[];
 }
 
 interface NeedsWjpItem {
   priority: string;
   title: string;
   ask: string;
-  impact: string;
-  dateAdded: string;
 }
 
 interface Treasury {
@@ -49,82 +48,38 @@ interface Treasury {
   usdcBase: string;
   sol: string;
   solUsd: string;
-  usdcSol: string;
   total: string;
 }
 
-// ── Auth Gate ────────────────────────────────────────────
-function LoginForm({ onAuth }: { onAuth: () => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+interface BrainDump {
+  slug: string;
+  title: string;
+  date: string;
+  content: string;
+}
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(false);
-    const res = await fetch("/api/dashboard-auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      onAuth();
-    } else {
-      setError(true);
-      setPassword("");
-    }
-  }
-
+// ── Blinking Cursor ──────────────────────────────────
+function Cursor({ active = true }: { active?: boolean }) {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-6">
-        <p className="font-mono text-xs tracking-[0.25em] text-accent uppercase text-center">
-          Dashboard
-        </p>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          autoFocus
-          className="w-full bg-surface border border-border px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors"
-        />
-        {error && (
-          <p className="font-mono text-xs text-red-500 text-center">
-            Wrong password
-          </p>
-        )}
-        <button
-          type="submit"
-          className="w-full border border-foreground text-foreground py-3 font-mono text-xs tracking-widest uppercase hover:bg-foreground hover:text-bg transition-colors"
-        >
-          Enter
-        </button>
-      </form>
-    </div>
+    <span
+      className={`inline-block w-[6px] h-[10px] pixel-render ${
+        active ? "bg-accent cursor-blink" : "bg-muted/20"
+      }`}
+    />
   );
 }
 
-// ── Status Dot ───────────────────────────────────────────
-function StatusDot({ status }: { status: string }) {
-  const color =
-    status === "active"
-      ? "bg-accent"
-      : status === "ssh-only"
-        ? "bg-foreground/30"
-        : "bg-foreground/10";
-  return <span className={`inline-block w-2 h-2 ${color}`} />;
-}
-
-// ── Usage Bar ────────────────────────────────────────────
+// ── Usage Bar ────────────────────────────────────────
 function UsageBar({ label, pct }: { label: string; pct: number | null }) {
   if (pct === null) return null;
-  const color = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-accent";
+  const color =
+    pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-accent";
   return (
     <div className="flex items-center gap-3">
-      <span className="font-mono text-[10px] text-muted w-16 uppercase tracking-wider">
+      <span className="font-mono text-[10px] text-muted w-14 uppercase tracking-wider">
         {label}
       </span>
-      <div className="flex-1 h-1 bg-border">
+      <div className="flex-1 h-[2px] bg-border pixel-render">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="font-mono text-[10px] text-muted w-8 text-right">
@@ -134,19 +89,29 @@ function UsageBar({ label, pct }: { label: string; pct: number | null }) {
   );
 }
 
-// ── Main Dashboard ───────────────────────────────────────
-function Dashboard() {
+// ── Dashboard ────────────────────────────────────────
+export default function DashboardPage() {
+  const router = useRouter();
   const [agents, setAgents] = useState<Record<string, AgentData>>({});
   const [usage, setUsage] = useState<Record<string, UsageAgent>>({});
-  const [usageResets, setUsageResets] = useState<string>("");
-  const [kodo, setKodo] = useState<KodoData | null>(null);
+  const [usageResets, setUsageResets] = useState("");
+  const [kodoData, setKodoData] = useState<{
+    activeTask: string;
+    recentOutputs: { file: string; lines: number; summary: string }[];
+    cronJobs: { name: string; schedule: string; status: string }[];
+  } | null>(null);
   const [needsWjp, setNeedsWjp] = useState<NeedsWjpItem[]>([]);
   const [treasury, setTreasury] = useState<Treasury | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
+  const [brainDumps, setBrainDumps] = useState<BrainDump[]>([]);
+  const [taskQueue, setTaskQueue] = useState<{
+    active: string[];
+    queued: string[];
+  }>({ active: [], queued: [] });
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [expandedDump, setExpandedDump] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      // MC data
       const [dataRes, usageRes, kodoRes, needsRes] = await Promise.allSettled([
         fetch(`${MC_BASE}/data.json`),
         fetch(`${MC_BASE}/data/usage.json`),
@@ -158,6 +123,12 @@ function Dashboard() {
         const d = await dataRes.value.json();
         setAgents(d.agents || {});
         setLastUpdate(d.updatedAt || "");
+        if (d.taskQueue) {
+          setTaskQueue({
+            active: d.taskQueue.active || [],
+            queued: d.taskQueue.queued || [],
+          });
+        }
       }
 
       if (usageRes.status === "fulfilled" && usageRes.value.ok) {
@@ -167,8 +138,7 @@ function Dashboard() {
       }
 
       if (kodoRes.status === "fulfilled" && kodoRes.value.ok) {
-        const k = await kodoRes.value.json();
-        setKodo(k);
+        setKodoData(await kodoRes.value.json());
       }
 
       if (needsRes.status === "fulfilled" && needsRes.value.ok) {
@@ -176,17 +146,16 @@ function Dashboard() {
         setNeedsWjp(n.items || []);
       }
 
-      // Treasury
       await fetchTreasury();
+      await fetchBrainDumps();
     } catch {
-      // Silently fail — dashboard shows stale data
+      /* silent */
     }
   }, []);
 
   async function fetchTreasury() {
     try {
       const [ethRes, usdcRes, solRes, priceRes] = await Promise.allSettled([
-        // ETH balance on Base
         fetch(BASE_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -197,7 +166,6 @@ function Dashboard() {
             params: [TREASURY_BASE, "latest"],
           }),
         }),
-        // USDC on Base (ERC-20 balanceOf)
         fetch(BASE_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -214,7 +182,6 @@ function Dashboard() {
             ],
           }),
         }),
-        // SOL balance
         fetch(SOL_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -225,7 +192,6 @@ function Dashboard() {
             params: [TREASURY_SOL],
           }),
         }),
-        // Prices
         fetch(COINGECKO),
       ]);
 
@@ -259,308 +225,419 @@ function Dashboard() {
         usdcBase: `$${usdcBaseBal.toFixed(2)}`,
         sol: solBal.toFixed(4),
         solUsd: `$${solUsd.toFixed(2)}`,
-        usdcSol: "$0.00",
         total: `$${total.toFixed(2)}`,
       });
     } catch {
-      // Treasury fetch failed — show dashes
+      /* silent */
     }
   }
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // 5 min
-    return () => clearInterval(interval);
-  }, [fetchData]);
+  async function fetchBrainDumps() {
+    // Brain dumps are static — fetch from the content API
+    // For now, hardcode the known dumps until we add an API route
+    setBrainDumps([
+      {
+        slug: "crypto-payments",
+        title: "Why Crypto Payments Are Inevitable for Digital Products",
+        date: "2026-03-10",
+        content:
+          "Credit cards were designed for physical retail in the 1950s. We're still using that infrastructure to sell PDFs...",
+      },
+      {
+        slug: "agents-wallets",
+        title: "AI Agents Need Wallets, Not API Keys",
+        date: "2026-03-08",
+        content:
+          "Every AI agent framework talks about 'tool use' — give the agent access to APIs, let it call functions. But none talk about money...",
+      },
+      {
+        slug: "building-public",
+        title: "Building in Public When Your Team Is AI",
+        date: "2026-03-06",
+        content:
+          "People ask how a solo operator runs a studio with four AI agents. The honest answer: the same way any small team works...",
+      },
+    ]);
+  }
 
-  const agentOrder = ["kikai", "yama", "kodo", "claud"];
+  useEffect(() => {
+    // Check auth
+    const token = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith("dashboard_auth="));
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
+    fetchData();
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchData, router]);
+
+  function handleLogout() {
+    document.cookie =
+      "dashboard_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/");
+  }
 
   return (
-    <div className="mx-auto max-w-5xl px-6">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <section className="pt-32 pb-8">
-        <p className="font-mono text-xs tracking-[0.25em] text-accent uppercase mb-4">
-          Dashboard
-        </p>
-        <div className="flex items-baseline justify-between">
-          <h1 className="text-3xl font-light tracking-tight text-foreground">
-            Mission Control
-          </h1>
-          <span className="font-mono text-[10px] text-muted/40">
-            {lastUpdate ? `updated ${new Date(lastUpdate).toLocaleTimeString()}` : "—"}
-          </span>
+      <header className="border-b border-border bg-bg/90 backdrop-blur-sm sticky top-0 z-50">
+        <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="font-mono text-sm tracking-[0.3em] text-foreground uppercase glitch-text">
+              WJP
+            </h1>
+            <span className="font-mono text-[10px] text-muted/30 tracking-wider">
+              MISSION CONTROL
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="font-mono text-[10px] text-muted/30">
+              {lastUpdate
+                ? `${new Date(lastUpdate).toLocaleTimeString()}`
+                : "—"}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="font-mono text-[10px] text-muted hover:text-foreground transition-colors tracking-wider uppercase"
+            >
+              Exit
+            </button>
+          </div>
         </div>
-      </section>
+      </header>
 
-      <PixelDivider accent />
-
-      {/* Agent Status */}
-      <section className="py-8">
-        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-6">
-          Agents
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-border">
-          {agentOrder.map((name) => {
-            const agent = agents[name];
-            const u = usage[name];
-            return (
-              <div key={name} className="bg-surface p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <StatusDot status={agent?.status || "offline"} />
-                    <span className="font-mono text-sm text-foreground capitalize">
-                      {name}
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] text-muted/50 uppercase tracking-wider">
-                    {agent?.status || "offline"}
-                  </span>
-                </div>
-
-                {agent && (
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[10px] text-muted">
-                        Task
-                      </span>
-                      <span className="font-mono text-[10px] text-foreground/70 max-w-[200px] truncate text-right">
-                        {agent.workingOn || "idle"}
-                      </span>
-                    </div>
-                    {agent.contextPct !== null && (
-                      <div className="flex justify-between">
-                        <span className="font-mono text-[10px] text-muted">
-                          Context
-                        </span>
-                        <span
-                          className={`font-mono text-[10px] ${
-                            agent.contextPct >= 80
-                              ? "text-red-500"
-                              : "text-foreground/70"
-                          }`}
-                        >
-                          {agent.contextPct}%
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        {/* ── Agents ──────────────────────────────── */}
+        <section className="mb-8">
+          <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+            Agents
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border">
+            {AGENTS.map(({ key, name, role, pfp }) => {
+              const agent = agents[key];
+              const u = usage[key];
+              return (
+                <div key={key} className="bg-surface p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <img
+                      src={pfp}
+                      alt={name}
+                      className="w-8 h-8 pixel-render border border-border"
+                      style={{ borderRadius: 0, imageRendering: "pixelated" }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Cursor
+                          active={agent?.status === "active"}
+                        />
+                        <span className="font-mono text-sm text-foreground">
+                          {name}
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="font-mono text-[10px] text-muted">
-                        Model
-                      </span>
-                      <span className="font-mono text-[10px] text-foreground/70">
-                        {agent.model?.replace("claude-", "").replace("-4-6", "") || "—"}
+                      <span className="font-mono text-[10px] text-muted/50 uppercase tracking-wider">
+                        {role}
                       </span>
                     </div>
                   </div>
-                )}
 
-                {/* Usage bars */}
-                {u && (
-                  <div className="space-y-1.5 pt-3 border-t border-border">
-                    <UsageBar label="all" pct={u.allModels} />
-                    <UsageBar label="sonnet" pct={u.sonnet} />
-                    <UsageBar label="opus" pct={u.opus} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {usageResets && (
-          <p className="font-mono text-[10px] text-muted/30 mt-2 text-right">
-            usage resets {new Date(usageResets).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-          </p>
-        )}
-      </section>
+                  {agent && (
+                    <div className="space-y-1 text-[10px] font-mono mb-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted">task</span>
+                        <span className="text-foreground/60 truncate max-w-[120px] text-right">
+                          {agent.workingOn || "idle"}
+                        </span>
+                      </div>
+                      {agent.contextPct !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-muted">ctx</span>
+                          <span
+                            className={
+                              agent.contextPct >= 80
+                                ? "text-red-500"
+                                : "text-foreground/60"
+                            }
+                          >
+                            {agent.contextPct}%
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted">model</span>
+                        <span className="text-foreground/60">
+                          {agent.model
+                            ?.replace("claude-", "")
+                            .replace("-4-6", "") || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-      <PixelDivider />
-
-      {/* Treasury */}
-      <section className="py-8">
-        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-6">
-          Treasury
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1px] bg-border">
-          {[
-            { label: "ETH (Base)", val: treasury?.eth || "—", sub: treasury?.ethUsd },
-            { label: "USDC (Base)", val: treasury?.usdcBase || "—", sub: null },
-            { label: "SOL", val: treasury?.sol || "—", sub: treasury?.solUsd },
-            { label: "USDC (Sol)", val: treasury?.usdcSol || "—", sub: null },
-          ].map((item) => (
-            <div key={item.label} className="bg-surface p-5">
-              <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-2">
-                {item.label}
-              </p>
-              <p className="font-mono text-sm text-foreground">{item.val}</p>
-              {item.sub && (
-                <p className="font-mono text-[10px] text-muted/50 mt-1">
-                  {item.sub}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-        {treasury?.total && (
-          <div className="border border-border bg-surface p-5 mt-[1px]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-accent uppercase tracking-wider">
-                Total
-              </span>
-              <span className="font-mono text-lg text-foreground">
-                {treasury.total}
-              </span>
-            </div>
+                  {u && (
+                    <div className="space-y-1 pt-2 border-t border-border/50">
+                      <UsageBar label="all" pct={u.allModels} />
+                      <UsageBar label="sonnet" pct={u.sonnet} />
+                      <UsageBar label="opus" pct={u.opus} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-      </section>
-
-      <PixelDivider />
-
-      {/* Active Work (Kodo) */}
-      {kodo && (
-        <section className="py-8">
-          <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-6">
-            Active Work
-          </h2>
-          <div className="border border-border bg-surface p-5 mb-4">
-            <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-2">
-              Current Task
+          {usageResets && (
+            <p className="font-mono text-[10px] text-muted/20 mt-1 text-right">
+              resets{" "}
+              {new Date(usageResets).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </p>
-            <p className="font-mono text-sm text-foreground">
-              {kodo.activeTask || "None"}
-            </p>
-          </div>
-
-          {kodo.recentOutputs && kodo.recentOutputs.length > 0 && (
-            <div className="border border-border bg-surface p-5">
-              <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-3">
-                Recent Outputs
-              </p>
-              <div className="space-y-2">
-                {kodo.recentOutputs.slice(0, 5).map((output, i) => (
-                  <div key={i} className="flex items-baseline justify-between">
-                    <span className="font-mono text-[10px] text-foreground/70 truncate max-w-[300px]">
-                      {output.file}
-                    </span>
-                    <span className="font-mono text-[10px] text-muted/50">
-                      {output.lines}L
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
         </section>
-      )}
 
-      <PixelDivider />
+        <PixelDivider accent />
 
-      {/* Needs WJP */}
-      {needsWjp.length > 0 && (
-        <section className="py-8">
-          <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-6">
-            Needs WJP
+        {/* ── Task Board ──────────────────────────── */}
+        <section className="my-8">
+          <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+            Tasks
           </h2>
-          <div className="space-y-[1px] bg-border">
-            {needsWjp.map((item, i) => (
-              <div key={i} className="bg-surface p-5">
-                <div className="flex items-center gap-3 mb-2">
-                  <span
-                    className={`font-mono text-[10px] tracking-wider uppercase px-2 py-0.5 border ${
-                      item.priority === "blocking"
-                        ? "border-red-500/50 text-red-500"
-                        : item.priority === "enabling"
-                          ? "border-accent/50 text-accent"
-                          : "border-border text-muted"
-                    }`}
-                  >
-                    {item.priority}
-                  </span>
-                  <span className="font-mono text-sm text-foreground">
-                    {item.title}
-                  </span>
-                </div>
-                <p className="font-mono text-xs text-muted/60 ml-0">
-                  {item.ask}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-border">
+            <div className="bg-surface p-4">
+              <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-3">
+                Active
+              </p>
+              {kodoData?.activeTask ? (
+                <p className="font-mono text-xs text-foreground/80">
+                  {kodoData.activeTask}
                 </p>
+              ) : taskQueue.active.length > 0 ? (
+                <div className="space-y-1">
+                  {taskQueue.active.map((t, i) => (
+                    <p key={i} className="font-mono text-xs text-foreground/80">
+                      {t}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="font-mono text-xs text-muted/30">none</p>
+              )}
+            </div>
+            <div className="bg-surface p-4">
+              <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-3">
+                Queued
+              </p>
+              {taskQueue.queued.length > 0 ? (
+                <div className="space-y-1">
+                  {taskQueue.queued.map((t, i) => (
+                    <p key={i} className="font-mono text-xs text-muted/60">
+                      {t}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="font-mono text-xs text-muted/30">empty</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <PixelDivider />
+
+        {/* ── Brain Dumps ─────────────────────────── */}
+        <section className="my-8">
+          <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+            Brain Dumps
+          </h2>
+          <div className="space-y-0">
+            {brainDumps.map((dump) => (
+              <div key={dump.slug}>
+                <button
+                  onClick={() =>
+                    setExpandedDump(
+                      expandedDump === dump.slug ? null : dump.slug
+                    )
+                  }
+                  className="w-full text-left py-3 flex items-baseline justify-between group"
+                >
+                  <span className="font-mono text-xs text-foreground group-hover:text-accent transition-colors">
+                    {dump.title}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted/30 shrink-0 ml-4">
+                    {dump.date}
+                  </span>
+                </button>
+                {expandedDump === dump.slug && (
+                  <div className="border border-border bg-surface p-4 mb-3">
+                    <p className="font-mono text-xs text-muted/60 leading-relaxed whitespace-pre-wrap">
+                      {dump.content}
+                    </p>
+                  </div>
+                )}
+                <PixelDivider />
               </div>
             ))}
           </div>
         </section>
-      )}
 
-      <PixelDivider />
+        <PixelDivider accent />
 
-      {/* Cron Health */}
-      {kodo?.cronJobs && kodo.cronJobs.length > 0 && (
-        <section className="py-8">
-          <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-6">
-            Cron Jobs
+        {/* ── Treasury ────────────────────────────── */}
+        <section className="my-8">
+          <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+            Treasury
           </h2>
-          <div className="border border-border bg-surface p-5">
-            <div className="space-y-2">
-              {kodo.cronJobs.map((job, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-foreground/70">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1px] bg-border">
+            {[
+              {
+                label: "ETH (Base)",
+                val: treasury?.eth || "—",
+                sub: treasury?.ethUsd,
+              },
+              {
+                label: "USDC (Base)",
+                val: treasury?.usdcBase || "—",
+                sub: null,
+              },
+              {
+                label: "SOL",
+                val: treasury?.sol || "—",
+                sub: treasury?.solUsd,
+              },
+              { label: "USDC (Sol)", val: "$0.00", sub: null },
+            ].map((item) => (
+              <div key={item.label} className="bg-surface p-4">
+                <p className="font-mono text-[10px] text-muted uppercase tracking-wider mb-1">
+                  {item.label}
+                </p>
+                <p className="font-mono text-sm text-foreground">{item.val}</p>
+                {item.sub && (
+                  <p className="font-mono text-[10px] text-muted/40 mt-0.5">
+                    {item.sub}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          {treasury?.total && (
+            <div className="border-t border-border bg-surface p-4 mt-[1px]">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] text-accent uppercase tracking-wider">
+                  Total
+                </span>
+                <span className="font-mono text-lg text-foreground">
+                  {treasury.total}
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <PixelDivider />
+
+        {/* ── Needs WJP ───────────────────────────── */}
+        {needsWjp.length > 0 && (
+          <section className="my-8">
+            <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+              Needs WJP
+            </h2>
+            <div className="space-y-[1px] bg-border">
+              {needsWjp.map((item, i) => (
+                <div key={i} className="bg-surface p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className={`font-mono text-[10px] tracking-wider uppercase px-1.5 py-0.5 border ${
+                        item.priority === "blocking"
+                          ? "border-red-500/40 text-red-500"
+                          : item.priority === "enabling"
+                            ? "border-accent/40 text-accent"
+                            : "border-border text-muted"
+                      }`}
+                    >
+                      {item.priority}
+                    </span>
+                    <span className="font-mono text-xs text-foreground">
+                      {item.title}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[10px] text-muted/50">
+                    {item.ask}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <PixelDivider />
+
+        {/* ── Cron Health ─────────────────────────── */}
+        {kodoData?.cronJobs && kodoData.cronJobs.length > 0 && (
+          <section className="my-8">
+            <h2 className="font-mono text-[10px] tracking-[0.25em] text-accent uppercase mb-4">
+              Cron Jobs
+            </h2>
+            <div className="border border-border bg-surface p-4">
+              {kodoData.cronJobs.map((job, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-1.5"
+                >
+                  <span className="font-mono text-[10px] text-foreground/60">
                     {job.name}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-[10px] text-muted/50">
+                    <span className="font-mono text-[10px] text-muted/40">
                       {job.schedule}
                     </span>
-                    <span
-                      className={`inline-block w-1.5 h-1.5 ${
-                        job.status === "active" ? "bg-accent" : "bg-foreground/10"
-                      }`}
-                    />
+                    <Cursor active={job.status === "active"} />
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      <PixelDivider />
+        {/* ── Recent Outputs ──────────────────────── */}
+        {kodoData?.recentOutputs && kodoData.recentOutputs.length > 0 && (
+          <section className="my-8">
+            <PixelDivider />
+            <h2 className="font-mono text-[10px] tracking-[0.25em] text-muted uppercase mb-4 mt-8">
+              Recent Outputs
+            </h2>
+            <div className="border border-border bg-surface p-4">
+              {kodoData.recentOutputs.slice(0, 8).map((output, i) => (
+                <div
+                  key={i}
+                  className="flex items-baseline justify-between py-1"
+                >
+                  <span className="font-mono text-[10px] text-foreground/50 truncate max-w-[300px]">
+                    {output.file}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted/30">
+                    {output.lines}L
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
 
-      <footer className="py-16">
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-xs text-muted tracking-widest">
+      {/* Footer */}
+      <footer className="border-t border-border mt-8">
+        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+          <span className="font-mono text-[10px] text-muted/20 tracking-widest">
             wjp.studio
-          </p>
-          <p className="font-mono text-xs text-muted">2026</p>
+          </span>
+          <span className="font-mono text-[10px] text-muted/20">2026</span>
         </div>
       </footer>
     </div>
   );
-}
-
-// ── Page Export ───────────────────────────────────────────
-export default function DashboardPage() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    const token = document.cookie
-      .split("; ")
-      .find((c) => c.startsWith("dashboard_auth="));
-    if (token) {
-      setAuthenticated(true);
-    }
-    setChecking(false);
-  }, []);
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="font-mono text-xs text-muted">···</p>
-      </div>
-    );
-  }
-
-  if (!authenticated) {
-    return <LoginForm onAuth={() => setAuthenticated(true)} />;
-  }
-
-  return <Dashboard />;
 }

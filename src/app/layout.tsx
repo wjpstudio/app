@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Nav } from "@/components/nav";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -19,18 +18,7 @@ export const metadata: Metadata = {
   title: "WJP Studio",
   description: "A creative studio that automates everything.",
   metadataBase: new URL("https://wjp.studio"),
-  openGraph: {
-    title: "WJP Studio",
-    description: "A creative studio that automates everything.",
-    url: "https://wjp.studio",
-    siteName: "WJP Studio",
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: "WJP Studio",
-    description: "A creative studio that automates everything.",
-  },
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
@@ -41,10 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-bg text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} font-mono antialiased bg-bg text-foreground`}
       >
-        <Nav />
-        <main className="pt-14">{children}</main>
+        {children}
       </body>
     </html>
   );

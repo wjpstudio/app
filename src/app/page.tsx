@@ -1,65 +1,101 @@
-import { projects } from "@/lib/data";
-import { ProjectCard } from "@/components/ProjectCard";
-import { AgentRow } from "@/components/AgentRow";
-import { PixelDivider } from "@/components/PixelDivider";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function SplashPage() {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith("dashboard_auth="));
+    if (token) {
+      router.push("/dashboard");
+    }
+    setChecking(false);
+  }, [router]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(false);
+
+    const res = await fetch("/api/dashboard-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (res.ok) {
+      router.push("/dashboard");
+    } else {
+      setError(true);
+      setPassword("");
+    }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="pixel-loader w-16" />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-6">
-      {/* Hero — type and grid, nothing else */}
-      <section className="pt-32 pb-24">
-        <p className="font-mono text-xs tracking-[0.25em] text-accent uppercase mb-8">
-          WJP Studio
-        </p>
-        <h1 className="text-4xl sm:text-5xl font-light tracking-tight leading-[1.1] mb-8 text-foreground max-w-2xl">
-          A creative studio that automates everything.
-        </h1>
-        <p className="font-mono text-sm text-muted max-w-md leading-relaxed">
-          One person. Four agents. Building products, content, and code for the
-          AI economy — around the clock.
-        </p>
-      </section>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg">
+      {/* CRT vignette effect */}
+      <div
+        className="fixed inset-0 pointer-events-none z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)",
+        }}
+      />
 
-      <PixelDivider accent />
-
-      {/* Active Projects — 6 cards in grid */}
-      <section className="py-16">
-        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-8">
-          Projects
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-border">
-          {projects.map((project) => (
-            <ProjectCard key={project.slug} project={project} />
-          ))}
-        </div>
-      </section>
-
-      <PixelDivider />
-
-      {/* Studio Team Row */}
-      <section className="py-16">
-        <h2 className="font-mono text-xs tracking-[0.25em] text-muted uppercase mb-8">
-          The Studio
-        </h2>
-        <div className="border border-border bg-surface p-6">
-          <AgentRow name="Kikai" role="Operator" />
-          <AgentRow name="Yama" role="Grower" />
-          <AgentRow name="Kodo" role="Builder" />
-          <AgentRow name="Claud" role="Builder" />
-        </div>
-      </section>
-
-      <PixelDivider />
-
-      {/* Footer */}
-      <footer className="py-16">
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-xs text-muted tracking-widest">
-            wjp.studio
+      <div className="relative z-20 w-full max-w-xs space-y-8 px-6">
+        {/* Logo — monospace, pixel-precise */}
+        <div className="text-center">
+          <h1 className="font-mono text-2xl tracking-[0.4em] text-foreground glitch-text">
+            WJP
+          </h1>
+          <p className="font-mono text-[10px] tracking-[0.3em] text-muted/40 mt-2 uppercase">
+            Studio
           </p>
-          <p className="font-mono text-xs text-muted">2026</p>
         </div>
-      </footer>
+
+        {/* Password field */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="·····"
+              autoFocus
+              className="w-full bg-transparent border border-border px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted/30 text-center tracking-[0.2em] focus:outline-none focus:border-accent/50 transition-colors"
+            />
+            {/* Blinking cursor indicator */}
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 w-[6px] h-[10px] bg-accent/50 cursor-blink pixel-render" />
+          </div>
+
+          {error && (
+            <p className="font-mono text-[10px] text-red-500 text-center tracking-wider">
+              ACCESS DENIED
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full border border-border py-3 font-mono text-[10px] tracking-[0.3em] uppercase text-muted hover:text-foreground hover:border-accent/50 transition-colors glitch-hover"
+          >
+            Enter
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

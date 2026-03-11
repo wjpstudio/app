@@ -1,124 +1,101 @@
-import Link from "next/link";
-import { projects, statusDots, statusColors } from "@/lib/data";
+"use client";
 
-export default function Home() {
-  const activeProjects = projects.filter(
-    (p) => p.status === "live" || p.status === "launching"
-  );
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function SplashPage() {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith("dashboard_auth="));
+    if (token) {
+      router.push("/dashboard");
+    }
+    setChecking(false);
+  }, [router]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(false);
+
+    const res = await fetch("/api/dashboard-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (res.ok) {
+      router.push("/dashboard");
+    } else {
+      setError(true);
+      setPassword("");
+    }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="pixel-loader w-16" />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-5xl px-6">
-      {/* Hero */}
-      <section className="pt-32 pb-24">
-        <p className="font-mono text-xs tracking-widest text-muted uppercase mb-6">
-          WJP Studio
-        </p>
-        <h1 className="text-4xl sm:text-5xl font-light tracking-tight leading-[1.1] mb-6 text-balance max-w-2xl">
-          One person. Four agents.
-          <br />
-          Building for the AI economy.
-        </h1>
-        <p className="text-subtle text-lg max-w-xl leading-relaxed">
-          A solo operator running an autonomous AI studio. Shipping products,
-          content, and code around the clock.
-        </p>
-      </section>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg">
+      {/* CRT vignette effect */}
+      <div
+        className="fixed inset-0 pointer-events-none z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)",
+        }}
+      />
 
-      {/* Active Projects */}
-      <section className="py-16 border-t border-border/50">
-        <div className="flex items-baseline justify-between mb-10">
-          <h2 className="font-mono text-xs tracking-widest text-muted uppercase">
-            Active Projects
-          </h2>
-          <Link
-            href="/projects"
-            className="text-sm text-muted hover:text-subtle transition-colors"
+      <div className="relative z-20 w-full max-w-xs space-y-8 px-6">
+        {/* Logo — monospace, pixel-precise */}
+        <div className="text-center">
+          <h1 className="font-mono text-2xl tracking-[0.4em] text-foreground glitch-text">
+            WJP
+          </h1>
+          <p className="font-mono text-[10px] tracking-[0.3em] text-muted/40 mt-2 uppercase">
+            Studio
+          </p>
+        </div>
+
+        {/* Password field */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="·····"
+              autoFocus
+              className="w-full bg-transparent border border-border px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted/30 text-center tracking-[0.2em] focus:outline-none focus:border-accent/50 transition-colors"
+            />
+            {/* Blinking cursor indicator */}
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 w-[6px] h-[10px] bg-accent/50 cursor-blink pixel-render" />
+          </div>
+
+          {error && (
+            <p className="font-mono text-[10px] text-red-500 text-center tracking-wider">
+              ACCESS DENIED
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full border border-border py-3 font-mono text-[10px] tracking-[0.3em] uppercase text-muted hover:text-foreground hover:border-accent/50 transition-colors glitch-hover"
           >
-            View all
-          </Link>
-        </div>
-        <div className="space-y-6">
-          {activeProjects.map((project) => (
-            <div
-              key={project.slug}
-              className="group flex items-start justify-between py-4 border-b border-border/30 last:border-0"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-normal">{project.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full ${statusDots[project.status]}`}
-                    />
-                    <span
-                      className={`font-mono text-xs ${statusColors[project.status]}`}
-                    >
-                      {project.status}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted max-w-md">
-                  {project.description}
-                </p>
-              </div>
-              {project.url && (
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-mono text-muted hover:text-subtle transition-colors shrink-0 mt-1"
-                >
-                  {project.url.replace("https://", "")}
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Studio */}
-      <section className="py-16 border-t border-border/50">
-        <div className="flex items-baseline justify-between mb-10">
-          <h2 className="font-mono text-xs tracking-widest text-muted uppercase">
-            The Studio
-          </h2>
-          <Link
-            href="/studio"
-            className="text-sm text-muted hover:text-subtle transition-colors"
-          >
-            Meet the team
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {["Claud", "Kikai", "Yama", "Kodo"].map((name) => (
-            <div key={name} className="space-y-2">
-              <div className="w-full aspect-square bg-surface rounded-lg border border-border/50 flex items-center justify-center">
-                <span className="font-mono text-2xl text-muted/30">
-                  {name[0]}
-                </span>
-              </div>
-              <p className="text-sm font-medium">{name}</p>
-              <p className="text-xs text-muted font-mono">
-                {name === "Claud"
-                  ? "builder"
-                  : name === "Kikai"
-                    ? "operator"
-                    : name === "Yama"
-                      ? "grower"
-                      : "builder"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-16 border-t border-border/50">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted font-mono">wjp.studio</p>
-          <p className="text-xs text-muted">2026</p>
-        </div>
-      </footer>
+            Enter
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

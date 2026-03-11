@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 const protectedLinks = [
   { href: "/projects", label: "Projects" },
   { href: "/studio", label: "Studio" },
-  { href: "/brain-dumps", label: "Brain Dumps" },
+  { href: "/brain-dumps", label: "Dumps" },
 ];
 
 function useAuth() {
@@ -34,45 +34,24 @@ export function Nav() {
   const authed = useAuth();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-bg/80 backdrop-blur-xl backdrop-saturate-[180%]">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-bg/90 backdrop-blur-sm">
       <div className="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between">
         <Link
           href="/"
-          className="font-mono text-sm tracking-wider text-subtle hover:text-foreground transition-colors"
+          className="font-mono text-sm tracking-widest text-foreground glitch-text uppercase"
         >
-          wjp.studio
+          WJP
         </Link>
-        <div className="flex items-center gap-6">
-          {authed ? (
-            <>
-              {protectedLinks.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`text-sm transition-colors ${
-                    pathname === href
-                      ? "text-foreground"
-                      : "text-muted hover:text-subtle"
-                  }`}
-                >
-                  {label}
-                </Link>
-              ))}
-              <Link
-                href="/dashboard"
-                className={`text-sm transition-colors ${
-                  pathname === "/dashboard"
-                    ? "text-foreground"
-                    : "text-muted hover:text-subtle"
-                }`}
-              >
-                Dashboard
-              </Link>
-            </>
-          ) : (
+        <div className="flex items-center gap-8">
+          {links.map(({ href, label }) => (
             <Link
-              href="/dashboard"
-              className="text-sm text-muted hover:text-subtle transition-colors"
+              key={href}
+              href={href}
+              className={`font-mono text-xs tracking-wide uppercase transition-colors glitch-text ${
+                pathname === href
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
             >
               Login
             </Link>

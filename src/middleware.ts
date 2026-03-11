@@ -1,28 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/dashboard", "/api/dashboard-auth"];
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Allow public paths, static assets, and Next.js internals
+  // Public routes — splash page and auth API only
   if (
-    PUBLIC_PATHS.includes(pathname) ||
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname.startsWith("/api/dashboard-auth") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/pfp") ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
 
-  // Check for auth cookie
-  const auth = req.cookies.get("dashboard_auth");
-  if (auth?.value === "1") {
-    return NextResponse.next();
+  // Everything else requires auth
+  const auth = request.cookies.get("dashboard_auth");
+  if (!auth || auth.value !== "1") {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Not authenticated - redirect to dashboard (has the login form)
-  const loginUrl = new URL("/dashboard", req.url);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {

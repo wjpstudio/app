@@ -334,9 +334,9 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="space-y-1 text-[12px] font-mono mb-3">
-                    <div className="flex justify-between">
+                    <div>
                       <span className="text-muted">task</span>
-                      <span className="text-foreground/60 truncate max-w-[120px] text-right">
+                      <span className="text-foreground/70 ml-3">
                         {agent?.workingOn || "idle"}
                       </span>
                     </div>

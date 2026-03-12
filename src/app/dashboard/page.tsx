@@ -341,29 +341,35 @@ export default function DashboardPage() {
                     <div>
                       <span className="text-muted">task</span>
                       <span className="text-foreground/70 ml-3">
-                        {agent?.workingOn || "idle"}
+                        {agent?.workingOn || (agent ? "idle" : "no data")}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">ctx</span>
-                      <span
-                        className={
-                          agent?.contextPct != null && agent.contextPct >= 80
-                            ? "text-red-500"
-                            : "text-foreground/60"
-                        }
-                      >
-                        {agent?.contextPct != null ? `${agent.contextPct}%` : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">model</span>
-                      <span className="text-foreground/60">
-                        {agent?.model
-                          ?.replace("claude-", "")
-                          .replace("-4-6", "") || "—"}
-                      </span>
-                    </div>
+                    {agent?.contextPct != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted">ctx</span>
+                        <span
+                          className={
+                            agent.contextPct >= 80
+                              ? "text-red-500"
+                              : agent.contextPct >= 70
+                              ? "text-yellow-500"
+                              : "text-foreground/60"
+                          }
+                        >
+                          {agent.contextPct}%
+                        </span>
+                      </div>
+                    )}
+                    {agent?.model && (
+                      <div className="flex justify-between">
+                        <span className="text-muted">model</span>
+                        <span className="text-foreground/60">
+                          {agent.model
+                            .replace("claude-", "")
+                            .replace("-4-6", "")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {u && (
@@ -634,7 +640,7 @@ export default function DashboardPage() {
                       {item.title}
                     </span>
                   </div>
-                  <p className="font-mono text-[12px] text-muted/50">
+                  <p className="font-mono text-[12px] text-muted/50 line-clamp-2">
                     {item.ask}
                   </p>
                 </div>

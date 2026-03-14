@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-14T04:35:04Z",
+  "updatedAt": "2026-03-14T04:38:04Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -179,6 +179,211 @@
       }
     ],
     "done": [
+      {
+        "task": "Fee model corrected across studio",
+        "owner": "Kikai",
+        "completed": "2026-03-12",
+        "detail": "Updated from 1% to 2.5% fee across 8 files in agent documentation."
+      },
+      {
+        "task": "FC homepage audit + 3 fixes applied",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Fixed: \"Become a Coseller\" carousel button now points to /search (was /documentation)"
+      },
+      {
+        "task": "Dashboard task board populated",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "21 backlog items, 6 in-progress, 5 blocked, 12+ completed across all projects"
+      },
+      {
+        "task": "deploy.sh security fix",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Removed hardcoded Netlify token, replaced with env var. Token still in git history (needs revoke by WJP)."
+      },
+      {
+        "task": "Launch day runbook created",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "~/forcryptomarket/LAUNCH-RUNBOOK.md"
+      },
+      {
+        "task": "Intelligence gathering system deployed",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "System docs at ~/command-center/intelligence/"
+      },
+      {
+        "task": "Content strategies created for all projects",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Pushed to all agent machines with execution assignments"
+      },
+      {
+        "task": "10 micro-business products QA passed",
+        "owner": "Claude",
+        "completed": "2026-03-13",
+        "detail": "VESSEL, DRAFT, STACK, BLUEPRINT, LEDGER, FLOW, PULSE, FORGE, SIGNAL, MINT all tested. 6 clean, 4 fixed."
+      },
+      {
+        "task": "FC launch distribution materials complete",
+        "owner": "Yama + Kikai",
+        "completed": "2026-03-13",
+        "detail": "Product Hunt copy, Reddit posts, 20 directory submissions, 24 tree cards, 6 listicle cards, coseller kit, teaser copy, email sequence."
+      },
+      {
+        "task": "FC test suite passing",
+        "owner": "Claude + Yama",
+        "completed": "2026-03-13",
+        "detail": "137 unit tests + 28 E2E tests all green. CI/CD pipeline active (lint + typecheck + coverage + build)."
+      },
+      {
+        "task": "FC security tiers 0-6 complete",
+        "owner": "Claude + Yama",
+        "completed": "2026-03-13",
+        "detail": "Atomic nonce consumption, timing-safe signatures, rate limiting fail-closed, CSP nonce-based, generic error messages, 75+ `any` types eliminated."
+      },
+      {
+        "task": "AI orchestration resources research saved",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Evaluated tools for agent coordination, monitoring, and workflow automation."
+      },
+      {
+        "task": "FC launch readiness audit completed",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Full audit: 91/100 score. Identified 3 critical blockers (SDK, CLI, npm auth). 4 WJP decisions documented."
+      },
+      {
+        "task": "Agent directives pushed",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Launch sprint assignments sent to all 3 agents. Yama on FC, Kodo on 67, Kikai on ops."
+      },
+      {
+        "task": "Dashboard v1 built",
+        "owner": "Claude (CEO)",
+        "completed": "2026-03-13",
+        "detail": "Hono + Bun server with agent health, task board, WJP action items. Reads from markdown files."
+      }
+    ]
+  },
+  "tasks": {
+    "inProgress": [
+      {
+        "task": "FC launch distribution prep",
+        "owner": "Kikai + Yama",
+        "priority": "P0",
+        "detail": "Product Hunt copy, Reddit posts, directory submissions, coseller outreach kit, teaser copy ready. Content strategies deployed to agents. Final scheduling needed.",
+        "status": ""
+      },
+      {
+        "task": "FC launch sprint - final fixes",
+        "owner": "Yama",
+        "priority": "P0",
+        "detail": "Yama running final E2E tests, fixing response headers, SDK/CLI status check, homepage CTA audit.",
+        "status": ""
+      },
+      {
+        "task": "CEO Autonomy System refinement",
+        "owner": "Claude (CEO)",
+        "priority": "P0",
+        "detail": "Hourly sync running via launchd. Webhook posting fixed. Dashboard serving at localhost:3001. Iterating on quality.",
+        "status": ""
+      },
+      {
+        "task": "67 Meme content for FC launch cross-promotion",
+        "owner": "Kodo",
+        "priority": "P1",
+        "detail": "Kodo created 3 meme content pieces. Need final review before posting. Pieces: \"The Receipt\" (Fri), \"The 67 Way\" (Sat), \"The Drop\" (Sun pre-launch tease).",
+        "status": "3 pieces drafted, pending WJP review"
+      },
+      {
+        "task": "Agent intelligence gathering",
+        "owner": "Kikai + Yama + Kodo",
+        "priority": "P1",
+        "detail": "All agents have monitoring targets. Checking daily X accounts, news, competitors. Logging to memory.",
+        "status": ""
+      }
+    ],
+    "backlog": [
+      {
+        "task": "Fix LiveBar fake timestamps",
+        "owner": "Claude + Yama",
+        "priority": "P1",
+        "detail": "LiveBar component generates random \"1m to 44m ago\" timestamps instead of real data. Deceptive and could damage trust."
+      },
+      {
+        "task": "Make GitHub repos public",
+        "owner": "WJP",
+        "priority": "P1",
+        "detail": "Footer and JSON-LD link to github.com/00onchain which has zero public repos. Links go nowhere."
+      },
+      {
+        "task": "Publish @forcrypto/sdk to npm",
+        "owner": "WJP + Claude",
+        "priority": "P0",
+        "detail": "Build and publish the SDK package from ~/forcryptomarket/app/sdk/. Code exists, tsup builds, @forcrypto npm org ready. Needs npm login first."
+      },
+      {
+        "task": "Publish @forcrypto/cli to npm",
+        "owner": "WJP + Claude",
+        "priority": "P0",
+        "detail": "Build and publish the CLI package from ~/forcryptomarket/app/cli/. Depends on SDK being published first. Needs shebang in dist output."
+      },
+      {
+        "task": "Revoke Netlify Token from deploy.sh and git history",
+        "owner": "WJP",
+        "priority": "P0",
+        "detail": "deploy.sh in dashboard repo contains a plaintext Netlify auth token. Token may be in git history."
+      },
+      {
+        "task": "Fix categories API 401 error",
+        "owner": "Claude",
+        "priority": "P1",
+        "detail": "Agent categories API returns 401 Unauthorized. Needs to be public for SDK/CLI users to browse categories."
+      },
+      {
+        "task": "Commit 19 unstaged changes in FC repo",
+        "owner": "WJP + Claude",
+        "priority": "P1",
+        "detail": "19 files modified/added in working tree including MCP restructure. Need to review, stage, and push."
+      },
+      {
+        "task": "Build merchant onboarding guide",
+        "owner": "Claude",
+        "priority": "P1",
+        "detail": "Create a step-by-step guide for sellers listing products on For Crypto. Cover wallet setup, listing creation, pricing, cosell system."
+      },
+      {
+        "task": "Deploy dashboard to Vercel",
+        "owner": "Claude",
+        "priority": "P1",
+        "detail": "Move dashboard from localhost:3001 to a Vercel deployment. Needs repo setup and env config."
+      },
+      {
+        "task": "Set up content automation pipeline",
+        "owner": "Claude + Kikai",
+        "priority": "P1",
+        "detail": "Build automated content generation and scheduling for social accounts (X/Twitter for FC, PN, XES, 67). Use n8n or similar."
+      },
+      {
+        "task": "Weekly agent memory review for drift/injection",
+        "owner": "Claude (CEO)",
+        "priority": "P1",
+        "detail": "Establish weekly review of agent memory/ files and SESSION-STATE.md for instruction drift, hallucinated corrections, or prompt injection attempts."
+      },
+      {
+        "task": "Design 67 Market embeddable checkout using FC",
+        "owner": "Kodo + Claude",
+        "priority": "P1",
+        "detail": "Build an embeddable marketplace checkout component that 67 Market uses, powered by For Crypto's payment infrastructure."
+      }
+    ],
+    "completed": [
       {
         "task": "Fee model corrected across studio",
         "owner": "Kikai",

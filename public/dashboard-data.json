@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-14T22:05:01Z",
+  "updatedAt": "2026-03-14T22:35:05Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -39,67 +39,56 @@
       "rateLimit": false
     }
   },
-  "needsWjp": [
-    {
-      "priority": "blocking",
-      "title": "Publish @forcrypto/sdk and @forcrypto/cli to npm (P0 LAUNCH BLOCKER)",
-      "ask": "Generate a granular access token on npmjs.com OR enable 2FA on the wjponchain npm account"
-    },
-    {
-      "priority": "enabling",
-      "title": "SIGNAL Pricing",
-      "ask": "Pick $9 or $14"
-    }
-  ],
+  "needsWjp": [],
   "taskQueue": {
     "active": [
       {
-        "task": "FC launch sprint - T-24 hours",
+        "task": "FC launch sprint - T-48 hours",
         "owner": "Claude (CEO) + Yama",
         "priority": "P0",
-        "detail": "27 files modified (design pass + overnight fixes + post-commit fixes). Build green. SDK/CLI still not on npm (404). Auth FAQ updated. AI slop cleaned. Listing page design polished.",
-        "status": "Blocked on WJP: commit 27 files, npm publish SDK+CLI, revoke Netlify token."
+        "detail": "SDK+CLI published to npm. 27 files committed. DNS configured. Email live. Workspace downgraded. SIGNAL priced at $9.",
+        "status": "Unblocked. Final preflight checks remaining."
       },
       {
         "task": "FC launch distribution prep",
         "owner": "Yama + Kikai",
         "priority": "P0",
-        "detail": "X thread (5 posts), Discord announcement (3 versions), Reddit posts (4 subreddits), Product Hunt copy, coseller DM template all finalized. Scheduling needed.",
-        "status": "Materials complete. SDK/CLI posts held until packages published."
+        "detail": "X thread (5 posts), Discord announcement (3 versions), Reddit posts (4 subreddits), Product Hunt copy, coseller DM template all finalized.",
+        "status": "SDK/CLI now published. Distribution materials can reference real npm packages."
       },
       {
         "task": "Seed product upload prep",
         "owner": "Yama",
         "priority": "P0",
-        "detail": "10 product listings ready for Monday 8:30 AM upload. Copy complete. Prices need WJP confirmation on PULSE, LEDGER, FLOW, FORGE.",
-        "status": "Copy ready. Cover images and final pricing pending."
+        "detail": "10 product listings ready for Monday 8:30 AM upload. SIGNAL priced at $9. Tier names (LEDGER, FLOW, etc.) confirmed as cosmetic sample text, not product config.",
+        "status": "Copy ready. Cover images pending."
       },
       {
         "task": "CEO Autonomy System",
         "owner": "Claude (CEO)",
         "priority": "P0",
-        "detail": "Dashboard at dashboard.wjp.studio. Auto-sync every 30min via LaunchAgent. CEO sync every 3h. Morning briefs generated.",
-        "status": "Running. Dashboard data pipeline improved."
+        "detail": "Dashboard at dashboard.wjp.studio. Auto-sync every 30min via LaunchAgent. CEO sync every 3h.",
+        "status": "Running."
       },
       {
         "task": "67 Market spec + activation",
         "owner": "Kodo",
         "priority": "P1",
-        "detail": "67 Market embed spec delivered. Implementation plan drafted. 67coinX activation plan ready. 3 FC launch memes scheduled.",
+        "detail": "67 Market embed spec delivered. Implementation plan drafted. 67coinX activation plan ready.",
         "status": "Specs delivered. Awaiting FC launch before build."
       },
       {
         "task": "Public Network Phase 1 research",
         "owner": "Kikai",
         "priority": "P1",
-        "detail": "DID standards, Ceramic, Lens, Farcaster architecture research. Draft initial architecture proposal.",
-        "status": "Starting."
+        "detail": "DID standards, Ceramic, Lens, Farcaster architecture research.",
+        "status": "In progress."
       },
       {
         "task": "Agent intelligence gathering",
         "owner": "Kikai + Yama + Kodo",
         "priority": "P1",
-        "detail": "All agents monitoring 20+ X accounts, crypto news, competitors. Logging to memory. CT scans every 2 hours.",
+        "detail": "All agents monitoring 20+ X accounts, crypto news, competitors.",
         "status": ""
       }
     ],
@@ -279,52 +268,52 @@
   "tasks": {
     "inProgress": [
       {
-        "task": "FC launch sprint - T-24 hours",
+        "task": "FC launch sprint - T-48 hours",
         "owner": "Claude (CEO) + Yama",
         "priority": "P0",
-        "detail": "27 files modified (design pass + overnight fixes + post-commit fixes). Build green. SDK/CLI still not on npm (404). Auth FAQ updated. AI slop cleaned. Listing page design polished.",
-        "status": "Blocked on WJP: commit 27 files, npm publish SDK+CLI, revoke Netlify token."
+        "detail": "SDK+CLI published to npm. 27 files committed. DNS configured. Email live. Workspace downgraded. SIGNAL priced at $9.",
+        "status": "Unblocked. Final preflight checks remaining."
       },
       {
         "task": "FC launch distribution prep",
         "owner": "Yama + Kikai",
         "priority": "P0",
-        "detail": "X thread (5 posts), Discord announcement (3 versions), Reddit posts (4 subreddits), Product Hunt copy, coseller DM template all finalized. Scheduling needed.",
-        "status": "Materials complete. SDK/CLI posts held until packages published."
+        "detail": "X thread (5 posts), Discord announcement (3 versions), Reddit posts (4 subreddits), Product Hunt copy, coseller DM template all finalized.",
+        "status": "SDK/CLI now published. Distribution materials can reference real npm packages."
       },
       {
         "task": "Seed product upload prep",
         "owner": "Yama",
         "priority": "P0",
-        "detail": "10 product listings ready for Monday 8:30 AM upload. Copy complete. Prices need WJP confirmation on PULSE, LEDGER, FLOW, FORGE.",
-        "status": "Copy ready. Cover images and final pricing pending."
+        "detail": "10 product listings ready for Monday 8:30 AM upload. SIGNAL priced at $9. Tier names (LEDGER, FLOW, etc.) confirmed as cosmetic sample text, not product config.",
+        "status": "Copy ready. Cover images pending."
       },
       {
         "task": "CEO Autonomy System",
         "owner": "Claude (CEO)",
         "priority": "P0",
-        "detail": "Dashboard at dashboard.wjp.studio. Auto-sync every 30min via LaunchAgent. CEO sync every 3h. Morning briefs generated.",
-        "status": "Running. Dashboard data pipeline improved."
+        "detail": "Dashboard at dashboard.wjp.studio. Auto-sync every 30min via LaunchAgent. CEO sync every 3h.",
+        "status": "Running."
       },
       {
         "task": "67 Market spec + activation",
         "owner": "Kodo",
         "priority": "P1",
-        "detail": "67 Market embed spec delivered. Implementation plan drafted. 67coinX activation plan ready. 3 FC launch memes scheduled.",
+        "detail": "67 Market embed spec delivered. Implementation plan drafted. 67coinX activation plan ready.",
         "status": "Specs delivered. Awaiting FC launch before build."
       },
       {
         "task": "Public Network Phase 1 research",
         "owner": "Kikai",
         "priority": "P1",
-        "detail": "DID standards, Ceramic, Lens, Farcaster architecture research. Draft initial architecture proposal.",
-        "status": "Starting."
+        "detail": "DID standards, Ceramic, Lens, Farcaster architecture research.",
+        "status": "In progress."
       },
       {
         "task": "Agent intelligence gathering",
         "owner": "Kikai + Yama + Kodo",
         "priority": "P1",
-        "detail": "All agents monitoring 20+ X accounts, crypto news, competitors. Logging to memory. CT scans every 2 hours.",
+        "detail": "All agents monitoring 20+ X accounts, crypto news, competitors.",
         "status": ""
       }
     ],
@@ -508,18 +497,5 @@
     "decisions": "",
     "launchReadiness": ""
   },
-  "blocked": [
-    {
-      "priority": "blocking",
-      "title": "Publish @forcrypto/sdk and @forcrypto/cli to npm (P0 LAUNCH BLOCKER)",
-      "ask": "Generate a granular access token on npmjs.com OR enable 2FA on the wjponchain npm account",
-      "who": "Launch (Monday March 16)"
-    },
-    {
-      "priority": "enabling",
-      "title": "SIGNAL Pricing",
-      "ask": "Pick $9 or $14",
-      "who": "Yama (For Crypto)"
-    }
-  ]
+  "blocked": []
 }

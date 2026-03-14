@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-14T06:11:51Z",
+  "updatedAt": "2026-03-14T06:16:56Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -517,11 +517,11 @@
     ]
   },
   "directive": {
-    "id": "2026-03-14-0730",
-    "statusSummary": "T-47 hours to launch. All agents active. Yama delivered E2E audit (13 pages) + QA report + launch day minute-by-minute plan. Kodo delivered 67 Market spec, 30K word research, 3 memes. All overnight code fixes verified in local build. 24 files await WJP commit. Morning brief ready at ~/command-center/ceo-sync/reports/2026-03-14-morning-brief.md.",
-    "riskAssessment": "- **HIGH**: SDK/CLI not on npm. Every developer CTA points to nonexistent packages. #1 launch risk. BLOCKED ON WJP.\n- **HIGH**: 24 unstaged FC changes need commit+push. Overnight fixes (LiveBar, CLI docs, APIs, embed themes) don't deploy until committed.\n- **MEDIUM**: QA test product still live on /search. Admin dashboard toggle at /_admin/dashboard.\n- **MEDIUM**: Marketplace empty until Monday 8:30 AM upload. 10 product listings with copy ready.\n- **LOW**: dashboard.wjp.studio alias workaround (functional).\n\n### WJP Decision Package\n\n1. **P0**: Run `cd ~/forcryptomarket/app && git diff --stat",
-    "decisions": "1. **P0**: Run `cd ~/forcryptomarket/app && git diff --stat` to review, then commit + push 24 files\n2. **P0**: Publish SDK + CLI to npm (`npm login --scope=@forcrypto` then build + publish from sdk/ and cli/)\n3. **P1**: Revoke Netlify token in Netlify dashboard\n4. **P1**: Confirm product pricing (PULSE, LEDGER, FLOW, FORGE - current proposals in Yama's product listing copy)\n\n**Launch readiness: 92%**",
-    "launchReadiness": "92%"
+    "id": "2026-03-14-0830",
+    "statusSummary": "T-46 hours to launch. All systems operational. FC site 200, Dashboard 200.\n\nOvernight CEO autonomous work completed:\n- Fixed dashboard parser (Yama now shows real status instead of \"no data\")\n- Fixed forcrypto.so wrong URL across 29 Yama output files\n- Fixed 1% fee references to 2.5% across 7 Yama output files (with dollar comparison corrections)\n- Verified SDK and CLI both build clean (SDK: 13KB CJS + 12KB ESM + types, CLI: 10KB CJS)\n- Confirmed SDK must publish FIRST (CLI depends on it as npm package)\n- Full codebase QA sweep: zero forcrypto.so, zero em dashes in UI, zero TODOs, zero coming ",
+    "riskAssessment": "- **HIGH**: SDK/CLI not on npm. Every developer CTA points to nonexistent packages. BLOCKED ON WJP.\n- **HIGH**: 23 unstaged FC changes need commit+push. Overnight fixes don't deploy until committed.\n- **MEDIUM**: QA test product still live on /search. Admin dashboard toggle at /_admin/dashboard.\n- **MEDIUM**: Marketplace empty until Monday 8:30 AM upload. 10 product listings with copy ready.\n- **RESOLVED**: forcrypto.so URL in launch materials (29 files fixed by CEO)\n- **RESOLVED**: 1% fee in launch materials (7 files fixed by CEO)\n- **LOW**: dashboard.wjp.studio alias workaround (functional).",
+    "decisions": "1. **P0**: Review + commit + push 23 FC files (`cd ~/forcryptomarket/app && git diff --stat`)\n2. **P0**: Publish SDK first, then CLI to npm (detailed steps in morning brief)\n3. **P1**: Revoke Netlify token in Netlify dashboard\n4. **P1**: Confirm product pricing (PULSE, LEDGER, FLOW, FORGE)\n\nMorning brief with exact commands: ~/command-center/ceo-sync/reports/2026-03-14-morning-brief.md\n\n**Launch readiness: 93%**",
+    "launchReadiness": "93%"
   },
   "blocked": [
     {

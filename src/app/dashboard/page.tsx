@@ -1,47 +1,49 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
-import { PixelDivider } from "@/components/PixelDivider";
+import "./dashboard.css";
 
 const BASE_RPC = "https://mainnet.base.org";
 const SOL_RPC = "https://solana-rpc.publicnode.com";
-const TREASURY_BASE = "0x51e0c3cb17e8AAb6391F40468A34E8E94aa1166E";
+const TREASURY_BASE = "0x51e0c3cb17e8AAb6391F40468A34E8e94aa1166E";
 const TREASURY_SOL = "DPe3WqzeJisHPj4LyjRNcVgtUYUzJmmC4LkvUifadaLm";
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const COINGECKO =
   "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,solana&vs_currencies=usd";
-
-const AGENTS = [
-  { key: "claud", name: "Claud", role: "Builder", pfp: "/pfp/claud.png" },
-  { key: "kikai", name: "Kikai", role: "Operator", pfp: "/pfp/kikai.png" },
-  { key: "yama", name: "Yama", role: "Grower", pfp: "/pfp/yama.png" },
-  { key: "kodo", name: "Kodo", role: "Builder", pfp: "/pfp/kodo.png" },
-];
 
 interface AgentData {
   status: string;
   workingOn: string;
   contextPct: number | null;
   model: string;
-  sessionDurationMin: number | null;
-  lastActivityMin: number | null;
   rateLimit: boolean;
 }
 
-interface UsageAgent {
-  allModels: number | null;
-  sonnet: number | null;
-  opus: number | null;
-}
-
-interface NeedsWjpItem {
-  priority: string;
+interface BlockedItem {
   title: string;
   ask: string;
+  priority: string;
+  who?: string;
 }
 
-interface Treasury {
+interface TaskItem {
+  task: string;
+  owner?: string;
+  priority?: string;
+  detail?: string;
+  status?: string;
+  completed?: string;
+}
+
+interface DirectiveData {
+  id: string;
+  statusSummary: string;
+  riskAssessment: string;
+  decisions: string;
+  launchReadiness: string;
+}
+
+interface TreasuryData {
   eth: string;
   ethUsd: string;
   usdcBase: string;
@@ -50,219 +52,92 @@ interface Treasury {
   total: string;
 }
 
-interface BrainDump {
-  id: string;
-  date: string;
-  title: string;
-  source: "wjp+claud" | "studio";
-  summary: string;
-  keyDecisions: string[];
-  pending: string[];
+interface DashboardState {
+  updatedAt: string;
+  agents: Record<string, AgentData>;
+  needsWjp: BlockedItem[];
+  blocked: BlockedItem[];
+  tasks: {
+    inProgress: TaskItem[];
+    backlog: TaskItem[];
+    completed: TaskItem[];
+  };
+  directive: DirectiveData;
 }
 
-// ── Blinking Cursor ──────────────────────────────────
-function Cursor({ active = true }: { active?: boolean }) {
-  return (
-    <span
-      className={`inline-block w-[6px] h-[10px] pixel-render ${
-        active ? "bg-accent cursor-blink" : "bg-muted/20"
-      }`}
-    />
-  );
+const AGENT_CONFIG: Record<string, { name: string; role: string; pfpClass: string; pfp: string; model: string; contextColor: string }> = {
+  claud: { name: "Claude", role: "CEO", pfpClass: "dash-pfp-claude", pfp: "/pfp/claud.png", model: "opus-4.6", contextColor: "#3b82f6" },
+  kikai: { name: "Kikai", role: "Studio Ops Lead", pfpClass: "dash-pfp-kikai", pfp: "/pfp/kikai.png", model: "openclaw", contextColor: "#a855f7" },
+  yama: { name: "Yama", role: "For Crypto Lead", pfpClass: "dash-pfp-yama", pfp: "/pfp/yama.png", model: "openclaw", contextColor: "#ff6000" },
+  kodo: { name: "Kodo", role: "67 Lead", pfpClass: "dash-pfp-kodo", pfp: "/pfp/kodo.png", model: "openclaw", contextColor: "#22c55e" },
+};
+
+function timeAgo(iso: string): string {
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  } catch {
+    return "synced";
+  }
 }
 
-// ── Usage Bar ────────────────────────────────────────
-function UsageBar({ label, pct }: { label: string; pct: number | null }) {
-  if (pct === null) return null;
-  const color =
-    pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-accent";
-  return (
-    <div className="flex items-center gap-3">
-      <span className="font-mono text-[12px] text-muted w-14 uppercase tracking-wider">
-        {label}
-      </span>
-      <div className="flex-1 h-[2px] bg-border pixel-render">
-        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="font-mono text-[12px] text-muted w-8 text-right">
-        {pct}%
-      </span>
-    </div>
-  );
+function priorityClass(p: string): string {
+  const lower = p.toLowerCase();
+  if (lower === "blocked" || lower === "p0" || lower === "blocking") return "dash-priority-p0";
+  if (lower === "p1" || lower === "high") return "dash-priority-p1";
+  return "";
 }
 
-// ── Dashboard ────────────────────────────────────────
 export default function DashboardPage() {
-  const [agents, setAgents] = useState<Record<string, AgentData>>({});
-  const [usage, setUsage] = useState<Record<string, UsageAgent>>({});
-  const [usageResets, setUsageResets] = useState("");
-  const [kodoData, setKodoData] = useState<{
-    activeTask: string | { name: string; status: string; progress_percent?: number; blockedOn?: string | null };
-    recentOutputs: { file?: string; filename?: string; lines?: number; size?: number; summary?: string }[];
-    cronJobs: { name: string; schedule: string; status: string; lastRunAgo?: string }[];
-  } | null>(null);
-  const [allCronJobs, setAllCronJobs] = useState<{ name: string; schedule: string; status: string; lastRunAgo?: string; agent: string }[]>([]);
-  const [allOutputs, setAllOutputs] = useState<{ file?: string; filename?: string; lines?: number; size?: number; agent: string }[]>([]);
-  const [needsWjp, setNeedsWjp] = useState<NeedsWjpItem[]>([]);
-  const [treasury, setTreasury] = useState<Treasury | null>(null);
-  const [brainDumps, setBrainDumps] = useState<BrainDump[]>([]);
-  const [products, setProducts] = useState<{
-    bundles: { id: string; name: string; price: number; includes: string[]; tagline: string; status: string; addedBy: string }[];
-    pipeline: { id: string; name: string; description: string; status: string; owner: string; addedBy: string }[];
-  }>({ bundles: [], pipeline: [] });
-  const [taskQueue, setTaskQueue] = useState<{
-    active: string[];
-    queued: string[];
-  }>({ active: [], queued: [] });
-  const [lastUpdate, setLastUpdate] = useState("");
-  const [expandedDump, setExpandedDump] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [ceoSync, setCeoSync] = useState<any>(null);
+  const [data, setData] = useState<DashboardState | null>(null);
+  const [treasury, setTreasury] = useState<TreasuryData | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      // Single API route — fetches all data from private wjpstudio/dashboard repo server-side
-      const dashRes = await fetch("/api/dashboard-data");
-      const dashData = dashRes.ok ? await dashRes.json() : {};
-
-      const d = dashData.data;
-      if (d) {
-        setAgents(d.agents || {});
-        setLastUpdate(d.updatedAt || "");
-        if (d.taskQueue) {
-          const normalize = (arr: unknown[]) =>
-            arr.map((t) =>
-              typeof t === "string" ? t : (t as Record<string, unknown>).task as string || JSON.stringify(t)
-            );
-          setTaskQueue({
-            active: normalize(d.taskQueue.active || []),
-            queued: normalize(d.taskQueue.queued || []),
-          });
-        }
+      const res = await fetch("/api/dashboard-data");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.ceoSync) {
+        setData(json.ceoSync);
       }
+    } catch { /* silent */ }
 
-      const u = dashData.usage;
-      if (u) {
-        setUsage(u.agents || {});
-        setUsageResets(u.weekResets || "");
-      }
-
-      if (dashData.kodo) setKodoData(dashData.kodo);
-
-      // Merge per-agent JSON into agents state for richer card data
-      const agentFeeds = [
-        ["kodo", dashData.kodo],
-        ["kikai", dashData.kikai],
-        ["yama", dashData.yama],
-      ] as const;
-
-      setAgents((prev) => {
-        const merged = { ...prev };
-        for (const [key, agentJson] of agentFeeds) {
-          if (!agentJson) continue;
-          const existing = merged[key] || {};
-          merged[key] = {
-            ...existing,
-            workingOn: agentJson.activeTask?.name || existing.workingOn,
-            status: agentJson.status || existing.status,
-          };
-        }
-        return merged;
-      });
-
-      // Aggregate cron jobs and outputs from all agent feeds
-      const allCronJobs: { name: string; schedule: string; status: string; lastRunAgo?: string; agent: string }[] = [];
-      const allOutputs: { file?: string; filename?: string; lines?: number; size?: number; agent: string }[] = [];
-      for (const [key, agentJson] of agentFeeds) {
-        if (!agentJson) continue;
-        for (const job of agentJson.cronJobs || []) {
-          allCronJobs.push({ ...job, agent: key });
-        }
-        for (const output of agentJson.recentOutputs || []) {
-          allOutputs.push({ ...output, agent: key });
-        }
-      }
-      setAllCronJobs(allCronJobs);
-      setAllOutputs(allOutputs);
-
-      if (dashData.ceoSync) setCeoSync(dashData.ceoSync);
-      if (dashData.needs) setNeedsWjp(dashData.needs.items || []);
-
-      const p = dashData.products;
-      if (p) setProducts({ bundles: p.bundles || [], pipeline: p.pipeline || [] });
-
-      // Brain dumps — merge studio + wjp, sort by date
-      const studioDumps: BrainDump[] = dashData.brainDumpsStudio?.dumps || [];
-      const wjpDumps: BrainDump[] = dashData.brainDumpsWjp?.dumps || [];
-      const merged = [...studioDumps, ...wjpDumps]
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 20);
-      setBrainDumps(merged);
-    } catch {
-      /* silent */
-    }
-
-    // Treasury — on-chain balance fetches
+    // Treasury on-chain
     try {
       const [ethRes, usdcRes, solRes, priceRes] = await Promise.allSettled([
         fetch(BASE_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 1,
-            method: "eth_getBalance",
-            params: [TREASURY_BASE, "latest"],
-          }),
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [TREASURY_BASE, "latest"] }),
         }),
         fetch(BASE_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 2,
-            method: "eth_call",
-            params: [
-              {
-                to: USDC_BASE,
-                data: `0x70a08231000000000000000000000000${TREASURY_BASE.slice(2)}`,
-              },
-              "latest",
-            ],
-          }),
+          body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "eth_call", params: [{ to: USDC_BASE, data: `0x70a08231000000000000000000000000${TREASURY_BASE.slice(2)}` }, "latest"] }),
         }),
         fetch(SOL_RPC, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 3,
-            method: "getBalance",
-            params: [TREASURY_SOL],
-          }),
+          body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "getBalance", params: [TREASURY_SOL] }),
         }),
         fetch(COINGECKO),
       ]);
 
-      const prices =
-        priceRes.status === "fulfilled" && priceRes.value.ok
-          ? await priceRes.value.json()
-          : { ethereum: { usd: 0 }, solana: { usd: 0 } };
+      const prices = priceRes.status === "fulfilled" && priceRes.value.ok
+        ? await priceRes.value.json()
+        : { ethereum: { usd: 0 }, solana: { usd: 0 } };
 
-      const ethBal =
-        ethRes.status === "fulfilled" && ethRes.value.ok
-          ? parseInt((await ethRes.value.json()).result, 16) / 1e18
-          : 0;
-
-      const usdcBaseBal =
-        usdcRes.status === "fulfilled" && usdcRes.value.ok
-          ? parseInt((await usdcRes.value.json()).result, 16) / 1e6
-          : 0;
-
-      const solBal =
-        solRes.status === "fulfilled" && solRes.value.ok
-          ? (await solRes.value.json()).result?.value / 1e9
-          : 0;
+      const ethBal = ethRes.status === "fulfilled" && ethRes.value.ok
+        ? parseInt((await ethRes.value.json()).result, 16) / 1e18 : 0;
+      const usdcBaseBal = usdcRes.status === "fulfilled" && usdcRes.value.ok
+        ? parseInt((await usdcRes.value.json()).result, 16) / 1e6 : 0;
+      const solBal = solRes.status === "fulfilled" && solRes.value.ok
+        ? (await solRes.value.json()).result?.value / 1e9 : 0;
 
       const ethUsd = ethBal * (prices.ethereum?.usd || 0);
       const solUsd = solBal * (prices.solana?.usd || 0);
@@ -277,605 +152,316 @@ export default function DashboardPage() {
         total: `$${total.toFixed(2)}`,
       });
     } catch { /* silent */ }
-
-
   }, []);
 
   useEffect(() => {
-    // Middleware handles auth server-side — no client-side cookie check needed
-    // (dashboard_auth is httpOnly, JS can't read it)
     fetchData();
-    const interval = setInterval(fetchData, 60 * 1000);
+    const interval = setInterval(fetchData, 60_000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  function handleLogout() {
-    // Clear readable cookie client-side, then hit logout API to clear httpOnly cookie
-    document.cookie =
-      "dashboard_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    // POST to logout API clears httpOnly cookie and redirects to /
-    fetch("/api/auth/logout", { method: "POST", redirect: "follow" })
-      .then(() => window.location.href = "/")
-      .catch(() => window.location.href = "/");
+  const blocked = data?.blocked || data?.needsWjp || [];
+  const agents = data?.agents || {};
+  const tasks = data?.tasks || { inProgress: [], backlog: [], completed: [] };
+  const directive = data?.directive;
+
+  // Extract risks from directive
+  const risks: string[] = [];
+  if (directive?.riskAssessment) {
+    const lines = directive.riskAssessment.split("\n");
+    for (const line of lines) {
+      const m = line.match(/^\d+\.\s+(.+)/);
+      if (m) risks.push(m[1].trim());
+      const m2 = line.match(/^- (.+)/);
+      if (m2 && !m) risks.push(m2[1].trim());
+    }
   }
 
+  // Extract intel from directive decisions
+  const intelItems: { source: string; text: string }[] = [];
+  if (directive?.decisions) {
+    const lines = directive.decisions.split("\n");
+    for (const line of lines) {
+      const trimmed = line.replace(/^[-*]\s*/, "").trim();
+      if (trimmed.length > 15 && intelItems.length < 6) {
+        intelItems.push({ source: "CEO", text: trimmed });
+      }
+    }
+  }
+
+  const treasuryItems = [
+    { token: "SOL", balance: treasury?.sol || "...", usd: treasury?.solUsd || "" },
+    { token: "ETH", balance: treasury?.eth || "...", usd: treasury?.ethUsd || "" },
+    { token: "USDC", balance: treasury?.usdcBase || "...", usd: "" },
+  ];
+
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Header */}
-      <header className="border-b border-border bg-bg/90 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/pfp/wjp.png"
-              alt="WJP"
-              width={40}
-              height={40}
-              className="border border-border"
-              style={{ borderRadius: 0, backgroundColor: "#ffffff" }}
-              unoptimized={false}
-            />
-            <h1 className="font-mono text-base tracking-[0.3em] text-foreground uppercase glitch-text">
-              WJP
-            </h1>
-            <span className="font-mono text-[12px] text-muted/30 tracking-wider">
-              Dashboard
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[12px] text-muted/30 flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500/50" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+    <div className="dash-app">
+      {/* Nav */}
+      <nav className="dash-nav">
+        <span className="dash-nav-logo">WJP Studio</span>
+        <div className="dash-nav-tabs">
+          <span className="dash-nav-tab active">Dashboard</span>
+          <span className="dash-nav-tab">Office</span>
+        </div>
+        <div className="dash-nav-status">
+          <span className="dash-nav-dot" />
+          <span>{data?.updatedAt ? timeAgo(data.updatedAt) : "loading..."}</span>
+        </div>
+      </nav>
+
+      {/* Grid */}
+      <div className="dash-grid">
+        {/* YOUR MOVE */}
+        <div className="dash-module dash-yourmove dash-fade">
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">
+              <span className="dash-yourmove-accent">YOUR MOVE</span>
+            </h2>
+            {blocked.length > 0 && (
+              <span className="dash-module-badge" style={{ color: "var(--dash-red)", background: "var(--dash-red-dim)" }}>
+                {blocked.length}
               </span>
-              {lastUpdate
-                ? (() => {
-                    const diff = Math.round((Date.now() - new Date(lastUpdate).getTime()) / 60000);
-                    const ago = diff < 1 ? "just now" : diff < 60 ? `${diff}m ago` : `${Math.round(diff / 60)}h ago`;
-                    return `updated ${ago}`;
-                  })()
-                : "—"}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="font-mono text-[12px] text-muted hover:text-foreground transition-colors tracking-wider uppercase"
-            >
-              Exit
-            </button>
+            )}
+          </div>
+          <div className="dash-module-body">
+            {blocked.length === 0 ? (
+              <div className="dash-move-empty">Nothing blocking the studio right now.</div>
+            ) : (
+              blocked.map((item, i) => (
+                <div className="dash-move-item" key={i}>
+                  <div className="dash-move-title">{item.title}</div>
+                  <div className="dash-move-what">{item.ask}</div>
+                  <div className="dash-move-meta">
+                    {item.who && <span>Blocks: {item.who}</span>}
+                    {item.priority && <span className={`dash-task-priority ${priorityClass(item.priority)}`}>{item.priority}</span>}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-      </header>
 
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* ── CEO Sync: Blocked on WJP ──────────── */}
-        {ceoSync?.blocked && ceoSync.blocked.length > 0 && (
-          <section className="mb-8">
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-red-400 uppercase mb-4">
-              Your Move ({ceoSync.blocked.length})
-            </h2>
-            <div className="grid gap-[1px] bg-border">
-              {ceoSync.blocked.map((item: { title: string; what: string; action: string; whoBlocked: string; priority?: string }, i: number) => (
-                <div key={i} className="bg-surface p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-sm text-foreground font-medium">{item.title}</span>
-                    {item.priority && <span className="font-mono text-[10px] text-red-400 border border-red-400/30 px-1.5 py-0.5 uppercase">{item.priority}</span>}
-                  </div>
-                  <p className="font-mono text-[12px] text-muted mb-1">{item.what}</p>
-                  <p className="font-mono text-[12px] text-accent">Action: {item.action}</p>
-                  {item.whoBlocked && <p className="font-mono text-[11px] text-muted/50 mt-1">Blocks: {item.whoBlocked}</p>}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── CEO Sync: Directive ────────────────── */}
-        {ceoSync?.directive && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase">
-                CEO Directive
-              </h2>
-              <span className="font-mono text-[11px] text-muted/30">{ceoSync.directive.date}</span>
-            </div>
-            <div className="bg-surface border border-border p-4">
-              {ceoSync.directive.readiness && (
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="font-mono text-2xl text-foreground font-bold">{ceoSync.directive.readiness}%</span>
-                  <span className="font-mono text-[12px] text-muted">Launch Ready</span>
-                </div>
-              )}
-              <p className="font-mono text-[12px] text-muted leading-relaxed">{ceoSync.directive.summary}</p>
-            </div>
-          </section>
-        )}
-
-        {/* ── CEO Sync: Task Board ───────────────── */}
-        {ceoSync?.tasks && (
-          <section className="mb-8">
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-              Task Board
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-border">
-              {[
-                { label: "In Progress", items: ceoSync.tasks.inProgress || [], color: "text-blue-400" },
-                { label: "Queued", items: ceoSync.tasks.backlog || [], color: "text-muted" },
-                { label: "Done", items: (ceoSync.tasks.completed || []).slice(0, 8), color: "text-green-400/50" },
-              ].map(({ label, items, color }) => (
-                <div key={label} className="bg-surface p-4">
-                  <h3 className={`font-mono text-[11px] uppercase tracking-wider ${color} mb-3`}>
-                    {label} ({items.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {items.length === 0 && <p className="font-mono text-[11px] text-muted/30">None</p>}
-                    {items.map((task: { title: string; owner?: string; priority?: string }, j: number) => (
-                      <div key={j} className="flex items-start justify-between gap-2">
-                        <span className="font-mono text-[11px] text-muted leading-tight">{task.title}</span>
-                        {task.priority && <span className="font-mono text-[9px] text-accent/60 shrink-0">{task.priority}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Agents ──────────────────────────────── */}
-        <section className="mb-8">
-          <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-            Agents
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border">
-            {AGENTS.map(({ key, name, role, pfp }) => {
-              const agent = agents[key];
-              const u = usage[key];
-              return (
-                <div key={key} className="bg-surface p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Image
-                      src={pfp}
-                      alt={name}
-                      width={48}
-                      height={48}
-                      className="border border-border"
-                      style={{ borderRadius: 0, backgroundColor: "#ffffff" }}
-                      unoptimized={false}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Cursor
-                          active={agent?.status === "active"}
-                        />
-                        <span className="font-mono text-base text-foreground">
-                          {name}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[12px] text-muted/50 uppercase tracking-wider">
-                        {role}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 text-[12px] font-mono mb-3">
-                    <div>
-                      <span className="text-muted">task</span>
-                      <span className="text-foreground/70 ml-3">
-                        {agent?.workingOn || (agent ? "idle" : "no data")}
-                      </span>
-                    </div>
-                    {agent?.contextPct != null && (
-                      <div className="flex justify-between">
-                        <span className="text-muted">ctx</span>
-                        <span
-                          className={
-                            agent.contextPct >= 80
-                              ? "text-red-500"
-                              : agent.contextPct >= 70
-                              ? "text-yellow-500"
-                              : "text-foreground/60"
-                          }
-                        >
-                          {agent.contextPct}%
-                        </span>
-                      </div>
-                    )}
-                    {agent?.model && (
-                      <div className="flex justify-between">
-                        <span className="text-muted">model</span>
-                        <span className="text-foreground/60">
-                          {agent.model
-                            .replace("claude-", "")
-                            .replace("-4-6", "")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {u && (
-                    <div className="space-y-1 pt-2 border-t border-border/50">
-                      <UsageBar label="all" pct={u.allModels} />
-                      <UsageBar label="sonnet" pct={u.sonnet} />
-                      <UsageBar label="opus" pct={u.opus} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {/* AGENTS */}
+        <div className="dash-module dash-agents dash-fade" style={{ animationDelay: "0.05s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">AGENTS</h2>
           </div>
-          {usageResets && (
-            <p className="font-mono text-[12px] text-muted/20 mt-1 text-right">
-              resets{" "}
-              {new Date(usageResets).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          )}
-        </section>
-
-        <PixelDivider accent />
-
-        {/* ── Task Board ──────────────────────────── */}
-        <section className="my-8">
-          <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-            Tasks
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-border">
-            <div className="bg-surface p-4">
-              <p className="font-mono text-[12px] text-muted uppercase tracking-wider mb-3">
-                Active
-              </p>
-              {kodoData?.activeTask ? (
-                <p className="font-mono text-base text-foreground/80">
-                  {typeof kodoData.activeTask === "string"
-                    ? kodoData.activeTask
-                    : kodoData.activeTask.name}
-                </p>
-              ) : taskQueue.active.length > 0 ? (
-                <div className="space-y-1">
-                  {taskQueue.active.map((t, i) => (
-                    <p key={i} className="font-mono text-base text-foreground/80">
-                      {typeof t === "string" ? t : (t as Record<string, unknown>).task as string || (t as Record<string, unknown>).name as string || "—"}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="font-mono text-base text-muted/30">none</p>
-              )}
-            </div>
-            <div className="bg-surface p-4">
-              <p className="font-mono text-[12px] text-muted uppercase tracking-wider mb-3">
-                Queued
-              </p>
-              {taskQueue.queued.length > 0 ? (
-                <div className="space-y-1">
-                  {taskQueue.queued.map((t, i) => (
-                    <p key={i} className="font-mono text-base text-muted/60">
-                      {typeof t === "string" ? t : (t as Record<string, unknown>).task as string || (t as Record<string, unknown>).name as string || "—"}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="font-mono text-base text-muted/30">empty</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <PixelDivider />
-
-        {/* ── Brain Dumps ─────────────────────────── */}
-        <section className="my-8">
-          <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-            Brain Dumps
-          </h2>
-          <div className="space-y-0">
-            {brainDumps.map((dump) => (
-              <div key={dump.id}>
-                <button
-                  onClick={() =>
-                    setExpandedDump(
-                      expandedDump === dump.id ? null : dump.id
-                    )
-                  }
-                  className="w-full text-left py-3 flex items-baseline justify-between group"
-                >
-                  <span className="font-mono text-base text-foreground group-hover:text-accent transition-colors">
-                    {dump.title}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0 ml-4">
-                    <span className="font-mono text-[12px] text-muted/30">{dump.date}</span>
-                    <span className={`font-mono text-[12px] uppercase tracking-wider ${dump.source === "wjp+claud" ? "text-accent/50" : "text-muted/30"}`}>
-                      {dump.source === "wjp+claud" ? "WJP" : "Studio"}
-                    </span>
-                  </div>
-                </button>
-                {expandedDump === dump.id && (
-                  <div className="border border-border bg-surface p-4 mb-3 space-y-3">
-                    <p className="font-mono text-[12px] text-muted/70 leading-relaxed">{dump.summary}</p>
-                    {dump.keyDecisions.length > 0 && (
-                      <div>
-                        <p className="font-mono text-[12px] text-accent uppercase tracking-wider mb-1">Decisions</p>
-                        {dump.keyDecisions.map((d, i) => (
-                          <p key={i} className="font-mono text-[12px] text-foreground/60">→ {d}</p>
-                        ))}
-                      </div>
-                    )}
-                    {dump.pending.length > 0 && (
-                      <div>
-                        <p className="font-mono text-[12px] text-amber-500 uppercase tracking-wider mb-1">Pending</p>
-                        {dump.pending.map((p, i) => (
-                          <p key={i} className="font-mono text-[12px] text-muted/50">□ {p}</p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <PixelDivider />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <PixelDivider accent />
-
-        {/* ── Products ────────────────────────────── */}
-        {(products.bundles.length > 0 || products.pipeline.length > 0) && (
-          <section className="my-8">
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-              Products
-            </h2>
-
-            {products.bundles.length > 0 && (
-              <div className="mb-6">
-                <p className="font-mono text-[12px] text-muted uppercase tracking-wider mb-3">Bundles</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-border">
-                  {products.bundles.map((b) => (
-                    <div key={b.id} className="bg-surface p-4">
-                      <div className="flex items-baseline justify-between mb-1">
-                        <span className="font-mono text-base text-foreground">{b.name}</span>
-                        <span className="font-mono text-base text-accent">${b.price}</span>
-                      </div>
-                      <p className="font-mono text-[12px] text-muted/60 mb-2">{b.tagline}</p>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {b.includes.map((p) => (
-                          <span key={p} className="font-mono text-[12px] text-muted border border-border px-1">{p}</span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`font-mono text-[12px] uppercase tracking-wider ${b.status === "ready" ? "text-green-500" : "text-amber-500"}`}>
-                          {b.status}
-                        </span>
-                        <span className="font-mono text-[12px] text-muted/40">
-                          {b.addedBy === "wjp+claud" ? "WJP + Claud" : "Studio"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {products.pipeline.length > 0 && (
-              <div>
-                <p className="font-mono text-[12px] text-muted uppercase tracking-wider mb-3">Pipeline</p>
-                <div className="border border-border bg-surface divide-y divide-border">
-                  {products.pipeline.map((item) => (
-                    <div key={item.id} className="p-3 flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-mono text-[12px] text-foreground/80">{item.name}</p>
-                        <p className="font-mono text-[12px] text-muted/50 truncate">{item.description}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className={`font-mono text-[12px] uppercase ${item.status === "queued" ? "text-amber-500" : "text-muted/40"}`}>{item.status}</p>
-                        <p className="font-mono text-[12px] text-muted/40">{item.addedBy === "wjp+claud" ? "WJP + Claud" : "Studio"}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        <PixelDivider accent />
-
-        {/* ── Treasury ────────────────────────────── */}
-        <section className="my-8">
-          <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-            Treasury
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1px] bg-border">
-            {[
-              {
-                label: "ETH (Base)",
-                val: treasury?.eth || "—",
-                sub: treasury?.ethUsd,
-              },
-              {
-                label: "USDC (Base)",
-                val: treasury?.usdcBase || "—",
-                sub: null,
-              },
-              {
-                label: "SOL",
-                val: treasury?.sol || "—",
-                sub: treasury?.solUsd,
-              },
-              { label: "USDC (Sol)", val: "$0.00", sub: null },
-            ].map((item) => (
-              <div key={item.label} className="bg-surface p-4">
-                <p className="font-mono text-[12px] text-muted uppercase tracking-wider mb-1">
-                  {item.label}
-                </p>
-                <p className="font-mono text-base text-foreground">{item.val}</p>
-                {item.sub && (
-                  <p className="font-mono text-[12px] text-muted/40 mt-0.5">
-                    {item.sub}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          {treasury?.total && (
-            <div className="border-t border-border bg-surface p-4 mt-[1px]">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] text-accent uppercase tracking-wider">
-                  Total
-                </span>
-                <span className="font-mono text-xl text-foreground">
-                  {treasury.total}
-                </span>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <PixelDivider />
-
-        {/* ── Needs WJP ───────────────────────────── */}
-        {needsWjp.length > 0 && (
-          <section className="my-8">
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-              Needs WJP
-            </h2>
-            <div className="space-y-[1px] bg-border">
-              {needsWjp.map((item, i) => (
-                <div key={i} className="bg-surface p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`font-mono text-[12px] tracking-wider uppercase px-1.5 py-0.5 border ${
-                        item.priority === "blocking"
-                          ? "border-red-500/40 text-red-500"
-                          : item.priority === "enabling"
-                            ? "border-accent/40 text-accent"
-                            : "border-border text-muted"
-                      }`}
-                    >
-                      {item.priority}
-                    </span>
-                    <span className="font-mono text-base text-foreground">
-                      {item.title}
-                    </span>
-                  </div>
-                  <p className="font-mono text-[12px] text-muted/50 line-clamp-2">
-                    {item.ask}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <PixelDivider />
-
-        {/* ── Cron Health ─────────────────────────── */}
-        {allCronJobs.length > 0 && (() => {
-          const grouped = allCronJobs.reduce((acc, job) => {
-            (acc[job.agent] = acc[job.agent] || []).push(job);
-            return acc;
-          }, {} as Record<string, typeof allCronJobs>);
-
-          return (
-          <section className="my-8">
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-accent uppercase mb-4">
-              Cron Jobs
-              <span className="text-muted/30 ml-2">{allCronJobs.length}</span>
-            </h2>
-            {/* Summary row — always visible */}
-            <div className="border border-border bg-surface p-4 space-y-2">
-              {Object.entries(grouped).map(([agent, jobs]) => {
-                const errors = jobs.filter(j => j.status === "error").length;
-                const stale = jobs.filter(j => j.status === "stale").length;
+          <div className="dash-module-body">
+            <div className="dash-agents-grid">
+              {Object.entries(AGENT_CONFIG).map(([key, cfg]) => {
+                const agent = agents[key];
+                const isOnline = agent?.status === "active" || key === "claud";
 
                 return (
-                  <details key={agent} open={errors > 0 || stale > 0}>
-                    <summary className="flex items-center justify-between cursor-pointer py-1 select-none">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[12px] text-foreground/70 uppercase">
-                          {agent}
-                        </span>
-                        <span className="font-mono text-[10px] text-muted/30">
-                          {jobs.length} jobs
-                        </span>
+                  <div className="dash-agent-card" key={key}>
+                    <div className="dash-agent-top">
+                      <div className={`dash-agent-pfp ${cfg.pfpClass}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={cfg.pfp} alt={cfg.name} />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {errors > 0 && <span className="font-mono text-[10px] text-red-500">{errors} err</span>}
-                        {stale > 0 && <span className="font-mono text-[10px] text-yellow-500">{stale} stale</span>}
-                        {errors === 0 && stale === 0 && (
-                          <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                        )}
+                      <div className="dash-agent-info">
+                        <span className="dash-agent-name">{cfg.name}</span>
+                        <span className="dash-agent-role">{cfg.role}</span>
                       </div>
-                    </summary>
-                    <div className="pl-4 mt-1 space-y-0.5">
-                      {jobs.map((job, i) => (
-                        <div key={i} className="flex items-center justify-between py-0.5">
-                          <span className="font-mono text-[11px] text-foreground/50">
-                            {job.name}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted/30">
-                              {job.lastRunAgo || "—"}
-                            </span>
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                              job.status === "ok" ? "bg-green-500" :
-                              job.status === "stale" ? "bg-yellow-500" :
-                              job.status === "error" ? "bg-red-500" : "bg-muted/30"
-                            }`} />
-                          </div>
-                        </div>
-                      ))}
+                      <span className={`dash-agent-dot ${isOnline ? "dash-dot-online" : "dash-dot-offline"}`} />
                     </div>
-                  </details>
+                    <div className="dash-agent-task-row">
+                      <span className="dash-agent-task-label">Task</span>
+                      <span className="dash-agent-task-text">
+                        {key === "claud"
+                          ? "CEO operations + launch coordination"
+                          : agent?.workingOn || "no data"}
+                      </span>
+                    </div>
+                    <div className="dash-agent-model">{cfg.model}</div>
+                    <div className="dash-agent-ctx-bar">
+                      <div
+                        className="dash-agent-ctx-fill"
+                        style={{
+                          width: `${agent?.contextPct || (key === "claud" ? 45 : 0)}%`,
+                          background: cfg.contextColor,
+                        }}
+                      />
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </section>
-          );
-        })()}
+          </div>
+        </div>
 
-        {/* ── Recent Outputs ──────────────────────── */}
-        {allOutputs.length > 0 && (
-          <section className="my-8">
-            <PixelDivider />
-            <h2 className="font-mono text-[12px] tracking-[0.25em] text-muted uppercase mb-4 mt-8">
-              Recent Outputs
-            </h2>
-            <div className="border border-border bg-surface p-4">
-              {allOutputs.slice(0, 12).map((output, i) => (
-                <div
-                  key={i}
-                  className="flex items-baseline justify-between py-1"
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-[10px] text-muted/30 uppercase w-10">
-                      {output.agent}
-                    </span>
-                    <span className="font-mono text-[12px] text-foreground/50 truncate max-w-[280px]">
-                      {output.file || output.filename || "—"}
-                    </span>
+        {/* CEO DIRECTIVE */}
+        <div className="dash-module dash-directive dash-fade" style={{ animationDelay: "0.1s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">CEO DIRECTIVE</h2>
+          </div>
+          <div className="dash-module-body">
+            {!directive?.statusSummary ? (
+              <div className="dash-move-empty">No directives issued yet.</div>
+            ) : (
+              <div className="dash-directive-card">
+                {directive.launchReadiness && (
+                  <div className="dash-directive-time">Launch readiness: {directive.launchReadiness}</div>
+                )}
+                <div className="dash-directive-summary">{directive.statusSummary}</div>
+                {risks.length > 0 && (
+                  <div className="dash-directive-risks">
+                    <div className="dash-directive-risks-title">TOP RISKS</div>
+                    {risks.slice(0, 5).map((risk, i) => (
+                      <div className="dash-risk-item" key={i}>
+                        <span className="dash-risk-num">{i + 1}.</span>
+                        <span>{risk}</span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="font-mono text-[12px] text-muted/30">
-                    {output.lines ? `${output.lines}L` : output.size ? `${Math.round(output.size / 1024)}K` : "—"}
-                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* TASK BOARD */}
+        <div className="dash-module dash-taskboard dash-fade" style={{ animationDelay: "0.1s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">TASK BOARD</h2>
+          </div>
+          <div className="dash-module-body">
+            <div className="dash-task-columns">
+              <div className="dash-task-col dash-col-active">
+                <div className="dash-task-col-header">
+                  <span className="dash-task-col-title">Active</span>
+                  <span className="dash-task-col-count">{tasks.inProgress.length}</span>
+                </div>
+                <div className="dash-task-col-items">
+                  {tasks.inProgress.length === 0 ? (
+                    <div className="dash-task-empty">None</div>
+                  ) : (
+                    tasks.inProgress.map((t, i) => (
+                      <div className="dash-task-item" key={i}>
+                        <span className="dash-task-item-title">{t.task}</span>
+                        <div className="dash-task-item-meta">
+                          {t.owner && <span className="dash-task-item-owner">{t.owner}</span>}
+                          {t.priority && <span className={`dash-task-priority ${priorityClass(t.priority)}`}>{t.priority}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="dash-task-col dash-col-queued">
+                <div className="dash-task-col-header">
+                  <span className="dash-task-col-title">Queued</span>
+                  <span className="dash-task-col-count">{tasks.backlog.length}</span>
+                </div>
+                <div className="dash-task-col-items">
+                  {tasks.backlog.length === 0 ? (
+                    <div className="dash-task-empty">None</div>
+                  ) : (
+                    tasks.backlog.map((t, i) => (
+                      <div className="dash-task-item" key={i}>
+                        <span className="dash-task-item-title">{t.task}</span>
+                        <div className="dash-task-item-meta">
+                          {t.owner && <span className="dash-task-item-owner">{t.owner}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="dash-task-col dash-col-done">
+                <div className="dash-task-col-header">
+                  <span className="dash-task-col-title">Done</span>
+                  <span className="dash-task-col-count">{tasks.completed.length}</span>
+                </div>
+                <div className="dash-task-col-items">
+                  {tasks.completed.length === 0 ? (
+                    <div className="dash-task-empty">None</div>
+                  ) : (
+                    tasks.completed.slice(0, 10).map((t, i) => (
+                      <div className="dash-task-item" key={i}>
+                        <span className="dash-task-item-title">{t.task}</span>
+                        <div className="dash-task-item-meta">
+                          {t.owner && <span className="dash-task-item-owner">{t.owner}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CONTENT QUEUE */}
+        <div className="dash-module dash-content dash-fade" style={{ animationDelay: "0.15s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">CONTENT QUEUE</h2>
+          </div>
+          <div className="dash-module-body">
+            <div className="dash-content-empty">
+              <div className="dash-content-empty-icon">Q</div>
+              <div className="dash-content-empty-text">No content pending approval</div>
+              <div className="dash-content-empty-note">
+                Agents will submit posts here for WJP to approve, reject, or give feedback before publishing.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* INTELLIGENCE */}
+        <div className="dash-module dash-intel dash-fade" style={{ animationDelay: "0.2s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">INTELLIGENCE</h2>
+            {intelItems.length > 0 && (
+              <span className="dash-module-badge" style={{ color: "var(--dash-accent)", background: "var(--dash-accent-dim)" }}>
+                {intelItems.length}
+              </span>
+            )}
+          </div>
+          <div className="dash-module-body">
+            <div className="dash-intel-items">
+              {intelItems.length === 0 ? (
+                <div className="dash-intel-empty">No intelligence gathered yet.</div>
+              ) : (
+                intelItems.map((item, i) => (
+                  <div className="dash-intel-item" key={i}>
+                    <div className="dash-intel-source">{item.source}</div>
+                    <div className="dash-intel-text">{item.text}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* TREASURY */}
+        <div className="dash-module dash-treasury dash-fade" style={{ animationDelay: "0.2s" }}>
+          <div className="dash-module-header">
+            <h2 className="dash-module-title">TREASURY</h2>
+            {treasury?.total && (
+              <span className="dash-module-badge" style={{ color: "var(--dash-green)", background: "var(--dash-green-dim)" }}>
+                {treasury.total}
+              </span>
+            )}
+          </div>
+          <div className="dash-module-body">
+            <div className="dash-treasury-items">
+              {treasuryItems.map((item, i) => (
+                <div className="dash-treasury-row" key={i}>
+                  <span className="dash-treasury-token">{item.token}</span>
+                  <div>
+                    <span className="dash-treasury-balance">{item.balance}</span>
+                    {item.usd && <span className="dash-treasury-usd"> {item.usd}</span>}
+                  </div>
                 </div>
               ))}
             </div>
-          </section>
-        )}
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-border mt-8">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-          <span className="font-mono text-[12px] text-muted/20 tracking-widest">
-            wjp.studio
-          </span>
-          <span className="font-mono text-[12px] text-muted/20">2026</span>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
-// redeploy 1773207701

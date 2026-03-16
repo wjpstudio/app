@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-16T03:05:06Z",
+  "updatedAt": "2026-03-16T03:35:05Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -21,8 +21,8 @@
       "rateLimit": false
     },
     "yama": {
-      "status": "active",
-      "workingOn": "Overnight \u2014 CEO directive active",
+      "status": "offline",
+      "workingOn": "no data",
       "contextPct": null,
       "model": "claude-opus-4-6",
       "sessionDurationMin": null,
@@ -491,7 +491,7 @@
     ]
   },
   "directive": {
-    "id": "2026-03-15-1828",
+    "id": "2026-03-15-2030",
     "statusSummary": "",
     "riskAssessment": "",
     "decisions": "",

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-17T07:35:03Z",
+  "updatedAt": "2026-03-17T08:05:00Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -13,7 +13,7 @@
     },
     "kikai": {
       "status": "active",
-      "workingOn": "ACTIVE. FC launch T-24h. PN research delivered. Visual pipeline proven. #learn channel live.",
+      "workingOn": "ACTIVE. Solo operator. FC launch moved to Wednesday March 19. Auth key switch due today 7 PM PT.",
       "contextPct": null,
       "model": "claude-opus-4-6",
       "sessionDurationMin": null,
@@ -491,8 +491,8 @@
     ]
   },
   "directive": {
-    "id": "2026-03-16-1740",
-    "statusSummary": "| Agent | Status | Role |\n|-------|--------|------|\n| **Kikai** (192.168.1.8) | ONLINE | Sole operator. Massively productive overnight. |\n| **Yama** (192.168.1.249) | DECOMMISSIONED | Machine erased March 15, given to Mike Lee. |\n| **Kodo** (192.168.1.200) | DECOMMISSIONED | Machine erased March 15, given away. |\n\n**Team is now: WJP + Claude (CEO) + Kikai + Perplexity Computer (cloud).** Yama and Kodo references in GOALS.md, queue files, and cron jobs are stale and should be cleaned up.",
+    "id": "2026-03-17-0043",
+    "statusSummary": "",
     "riskAssessment": "",
     "decisions": "",
     "launchReadiness": ""

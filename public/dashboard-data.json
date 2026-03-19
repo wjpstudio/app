@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-19T15:05:06Z",
+  "updatedAt": "2026-03-19T15:35:05Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -491,8 +491,8 @@
     ]
   },
   "directive": {
-    "id": "2026-03-19-0005",
-    "statusSummary": "",
+    "id": "2026-03-19-0807",
+    "statusSummary": "| Agent | Status | Role |\n|-------|--------|------|\n| **Kikai** (192.168.1.8) | ONLINE | Solo operator, studio ops lead |\n| **Yama** (192.168.1.249) | DECOMMISSIONED | Offline since March 15 |\n| **Kodo** (192.168.1.200) | DECOMMISSIONED | Offline since March 15 |\n\nThe studio is running on a single agent. Yama and Kodo were decommissioned March 15. All their backups are secured on Kikai.",
     "riskAssessment": "",
     "decisions": "",
     "launchReadiness": ""

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-21T07:35:03Z",
+  "updatedAt": "2026-03-21T08:05:03Z",
   "source": "ceo-sync",
   "agents": {
     "claud": {
@@ -13,7 +13,7 @@
     },
     "kikai": {
       "status": "active",
-      "workingOn": "ACTIVE. Solo operator. FC launch moved to Wednesday March 19. Auth key switch due today 7 PM PT.",
+      "workingOn": "ACTIVE. Solo operator. FC LIVE since March 18.",
       "contextPct": null,
       "model": "claude-opus-4-6",
       "sessionDurationMin": null,
@@ -491,7 +491,7 @@
     ]
   },
   "directive": {
-    "id": "2026-03-20-2351",
+    "id": "2026-03-21-0052",
     "statusSummary": "",
     "riskAssessment": "",
     "decisions": "",
